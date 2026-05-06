@@ -34,6 +34,7 @@ public class DashboardUI extends JFrame {
     
     private JTable tblNhanVien, tblChamCong;
     private JComboBox<String> cbNhanVienTinhLuong;
+    private JComboBox<String> cbGiaoViecNhanVien;
 
     private JComboBox<String> cbSelectDepartment;
     private JTable tblNhanVienTheoPhong;
@@ -79,6 +80,7 @@ public class DashboardUI extends JFrame {
         mainCardPanel.add(createTinhLuongPanel(), "TinhLuong");
         mainCardPanel.add(createThongBaoPanel(), "ThongBao");
         mainCardPanel.add(createVangMatPanel(), "VangMat");
+        mainCardPanel.add(createGiaoViecPanel(), "GiaoViec");
 
         root.add(mainCardPanel, BorderLayout.CENTER);
         add(root);
@@ -105,6 +107,11 @@ public class DashboardUI extends JFrame {
             if(cbNhanVienTinhLuong != null) {
                 cbNhanVienTinhLuong.removeAllItems();
                 for(Employee e : list) cbNhanVienTinhLuong.addItem(e.getId() + " - " + e.getName());
+            }
+
+            if(cbGiaoViecNhanVien != null) {
+                cbGiaoViecNhanVien.removeAllItems();
+                for(Employee e : list) cbGiaoViecNhanVien.addItem(e.getId() + " - " + e.getName());
             }
 
             if (cbSelectDepartment != null) {
@@ -140,6 +147,7 @@ public class DashboardUI extends JFrame {
         sidebar.add(createMenuBtn("Phòng ban", "PhongBan", 5)); 
         sidebar.add(createMenuBtn("Chấm công", "ChamCong", 3));
         sidebar.add(createMenuBtn("Tính lương", "TinhLuong", 4));
+        sidebar.add(createMenuBtn("Giao việc", "GiaoViec", 7));
         sidebar.add(createMenuBtn("Thông báo chung", "ThongBao", 7));
         sidebar.add(createMenuBtn("Quản lý Vắng mặt", "VangMat", 8));
 
@@ -307,7 +315,7 @@ public class DashboardUI extends JFrame {
             
             showEmployeeDetailsDialogForAdmin(empId);
         });
-        btnGrp.add(btnImport); btnGrp.add(btnExport); btnGrp.add(btnSchedule); btnGrp.add(btnEdit); btnGrp.add(btnDel); 
+        btnGrp.add(btnImport); btnGrp.add(btnExport); btnGrp.add(btnSchedule); btnGrp.add(btnViewDetails); btnGrp.add(btnEdit); btnGrp.add(btnDel); 
         header.add(title, BorderLayout.WEST); header.add(btnGrp, BorderLayout.EAST); p.add(header, BorderLayout.NORTH);
         tblNhanVien = new FixedTable(new DefaultTableModel(new String[]{"Mã NV", "Họ tên", "Phòng ban", "Chức vụ", "Lương cơ bản"}, 0)); tblNhanVien.setRowHeight(35); tblNhanVien.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); p.add(new JScrollPane(tblNhanVien), BorderLayout.CENTER);
         return p;
@@ -320,10 +328,16 @@ public class DashboardUI extends JFrame {
         JLabel monthLabel = new JLabel("Tháng " + now.getMonthValue() + " Năm " + now.getYear()); monthLabel.setFont(new Font("Tahoma", Font.BOLD, 22)); monthLabel.setForeground(TEXT_PRIMARY); headerPanel.add(monthLabel); d.add(headerPanel, BorderLayout.NORTH);
 
         JPanel grid = new JPanel(new GridLayout(0, 7, 8, 8)); grid.setBackground(BG_MAIN); grid.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        String[] dayNames = {"CN", "T2", "T3", "T4", "T5", "T6", "T7"};
-        for (String day : dayNames) { JLabel lbl = new JLabel(day, SwingConstants.CENTER); lbl.setFont(new Font("Tahoma", Font.BOLD, 15)); lbl.setForeground(TEXT_SECONDARY); grid.add(lbl); }
+        String[] dayNames = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
+        for (int i = 0; i < dayNames.length; i++) { 
+            JLabel lbl = new JLabel(dayNames[i], SwingConstants.CENTER); 
+            lbl.setFont(new Font("Tahoma", Font.BOLD, 15)); 
+            if (i == 5 || i == 6) lbl.setForeground(new Color(220, 38, 38)); 
+            else lbl.setForeground(TEXT_SECONDARY); 
+            grid.add(lbl); 
+        }
 
-        LocalDate firstDay = now.withDayOfMonth(1); int offset = firstDay.getDayOfWeek().getValue() % 7; 
+        LocalDate firstDay = now.withDayOfMonth(1); int offset = firstDay.getDayOfWeek().getValue() - 1; 
         for (int i = 0; i < offset; i++) grid.add(new JLabel("")); 
 
         int daysInMonth = now.lengthOfMonth();
@@ -331,18 +345,40 @@ public class DashboardUI extends JFrame {
             LocalDate date = now.withDayOfMonth(i);
             String shift = EmployeeManager.getInstance().getSchedule(empId, date);
             
-            boolean isXinNghi = shift.startsWith("Xin nghỉ") || shift.startsWith("Chờ duyệt nghỉ");
-            boolean isRegistered = !shift.equals("Chưa đăng ký") && !shift.equals("Nghỉ") && !isXinNghi;
+            String displayShift = shift;
+            if (shift.startsWith("Chờ duyệt nghỉ")) displayShift = "Chờ duyệt";
+            else if (shift.startsWith("Đã duyệt nghỉ")) displayShift = "Nghỉ phép";
+            else if (shift.startsWith("Từ chối nghỉ")) displayShift = "Từ chối";
+            else if (shift.equals("Chưa đăng ký")) displayShift = "";
+            else if (shift.startsWith("Ca 1")) displayShift = "Ca 1";
+            else if (shift.startsWith("Ca 2")) displayShift = "Ca 2";
 
-            JButton btnDay = new RoundedButton(String.valueOf(i)); btnDay.setFont(new Font("Tahoma", Font.BOLD, 16)); btnDay.setFocusPainted(false); btnDay.setCursor(new Cursor(Cursor.HAND_CURSOR)); btnDay.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
+            JButton btnDay = new RoundedButton("<html><center>" + i + "<br><font size='2'>" + displayShift + "</font></center></html>"); 
+            btnDay.setFont(new Font("Tahoma", Font.BOLD, 14)); btnDay.setFocusPainted(false); btnDay.setCursor(new Cursor(Cursor.HAND_CURSOR)); btnDay.setBorder(BorderFactory.createLineBorder(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY)); 
 
-            if (isXinNghi) { btnDay.setBackground(new Color(239, 68, 68)); btnDay.setForeground(Color.WHITE); } 
-            else if (isRegistered) { btnDay.setBackground(new Color(25, 118, 210)); btnDay.setForeground(Color.WHITE); } 
-            else { btnDay.setBackground(BG_CARD); btnDay.setForeground(TEXT_PRIMARY); }
+            if (shift.startsWith("Chờ duyệt")) { btnDay.setBackground(new Color(245, 158, 11)); btnDay.setForeground(Color.WHITE); } 
+            else if (shift.startsWith("Đã duyệt")) { btnDay.setBackground(new Color(239, 68, 68)); btnDay.setForeground(Color.WHITE); } 
+            else if (shift.startsWith("Từ chối")) { btnDay.setBackground(Color.GRAY); btnDay.setForeground(Color.WHITE); } 
+            else if (shift.startsWith("Ca 1") || shift.startsWith("Ca 2")) { btnDay.setBackground(new Color(59, 130, 246)); btnDay.setForeground(Color.WHITE); } 
+            else { if (date.getDayOfWeek() == java.time.DayOfWeek.SATURDAY || date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) { btnDay.setBackground(new Color(254, 226, 226)); btnDay.setForeground(new Color(220, 38, 38)); } else { btnDay.setBackground(BG_CARD); btnDay.setForeground(TEXT_PRIMARY); } }
 
-            if (date.equals(now)) btnDay.setBorder(BorderFactory.createLineBorder(COLOR_ORANGE, 2));
+            if (date.equals(now)) btnDay.setBorder(BorderFactory.createLineBorder(COLOR_ORANGE, 3));
 
-            btnDay.addActionListener(e -> { JOptionPane.showMessageDialog(d, "Ngày: " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\nCa đăng ký / Trạng thái: " + shift, "Chi tiết ca làm", JOptionPane.INFORMATION_MESSAGE); });
+            btnDay.addActionListener(e -> { 
+                String[] options = {"Chi tiết", "Yêu cầu tăng ca", "Đóng"};
+                int choice = JOptionPane.showOptionDialog(d, 
+                    "Ngày: " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\nCa hiện tại: " + shift + "\n\nBạn muốn thao tác gì?", 
+                    "Quản lý lịch - " + empName, 
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                
+                if (choice == 1) {
+                    String note = JOptionPane.showInputDialog(d, "Nhập nội dung yêu cầu tăng ca cho ngày " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ":\n(VD: Làm thêm từ 18h-20h)");
+                    if (note != null && !note.trim().isEmpty()) {
+                        EmployeeManager.getInstance().sendNotification("[Tăng ca - Sếp yêu cầu " + empName + " - " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "] " + note);
+                        JOptionPane.showMessageDialog(d, "✅ Đã gửi thông báo yêu cầu tăng ca tới tài khoản của " + empName + "!");
+                    }
+                }
+            });
             grid.add(btnDay);
         }
 
@@ -351,7 +387,7 @@ public class DashboardUI extends JFrame {
         d.add(grid, BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT)); bottomPanel.setBackground(BG_CARD); bottomPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
-        JLabel legend = new JLabel("🔵 Đã đăng ký ca | 🔴 Đang xin nghỉ/Đã duyệt  |  "); legend.setFont(new Font("Tahoma", Font.PLAIN, 14)); legend.setForeground(TEXT_SECONDARY); bottomPanel.add(legend);
+        JLabel legend = new JLabel("🔵 Đã nhận ca   🟡 Chờ duyệt   🔴 Nghỉ phép   ⚫ Từ chối  |  "); legend.setFont(new Font("Tahoma", Font.PLAIN, 14)); legend.setForeground(TEXT_SECONDARY); bottomPanel.add(legend);
         JButton btnRequestOT = new RoundedButton("🚀 Yêu cầu Tăng Ca"); btnRequestOT.setBackground(COLOR_ORANGE); btnRequestOT.setForeground(Color.WHITE); btnRequestOT.setFont(new Font("Tahoma", Font.BOLD, 14));
         btnRequestOT.addActionListener(e -> { String note = JOptionPane.showInputDialog(d, "Nhập nội dung yêu cầu tăng ca cho " + empName + ":\n(VD: Yêu cầu tăng ca tối T7 tuần này)"); if (note != null && !note.trim().isEmpty()) { EmployeeManager.getInstance().sendNotification("[Tăng ca - Gửi riêng " + empName + "] " + note); JOptionPane.showMessageDialog(d, "✅ Đã gửi thông báo yêu cầu tăng ca tới tài khoản của " + empName + "!"); } });
         bottomPanel.add(btnRequestOT); d.add(bottomPanel, BorderLayout.SOUTH); d.setVisible(true);
@@ -630,19 +666,25 @@ public class DashboardUI extends JFrame {
         JButton btnCal = new RoundedButton("Tính toán & Xuất"); btnCal.setBackground(COLOR_ORANGE); btnCal.setForeground(Color.WHITE);
         form.add(new JLabel("Nhân viên:")); form.add(cbNhanVienTinhLuong); form.add(new JLabel("Chọn Tháng / Năm:")); form.add(panelThangNam); form.add(new JLabel("Tổng ngày làm T2-T6:")); form.add(txtCongT2T6); form.add(new JLabel("Tổng ngày làm T7-CN:")); form.add(txtCongCuoiTuan); form.add(new JLabel("Phụ cấp/Thưởng:")); form.add(txtBonus); form.add(new JLabel("")); form.add(btnCal);
         gbc.gridx = 0; gbc.weightx = 0.3; content.add(form, gbc);
-        DefaultTableModel m = new DefaultTableModel(new String[]{"Nhân viên", "Tháng", "Công Hệ số 1", "Công Hệ số 2", "Thực lĩnh"}, 0); JTable t = new FixedTable(m); t.setRowHeight(30); gbc.gridx = 1; gbc.weightx = 0.7; content.add(new JScrollPane(t), gbc);
+        DefaultTableModel m = new DefaultTableModel(new String[]{"Nhân viên", "Tháng", "Công Hệ số 1", "Công Hệ số 2", "Khấu trừ", "Thực lĩnh"}, 0); JTable t = new FixedTable(m); t.setRowHeight(30); gbc.gridx = 1; gbc.weightx = 0.7; content.add(new JScrollPane(t), gbc);
         Runnable autoFillDays = () -> {
             if (isRefreshing) return; int idx = cbNhanVienTinhLuong.getSelectedIndex(); if(idx == -1) return; Employee emp = EmployeeManager.getInstance().getAllEmployees().get(idx); int month = (Integer) cbMonth.getSelectedItem(); int year = (Integer) cbYear.getSelectedItem(); int[] counts = EmployeeManager.getInstance().getAttendanceCount(emp.getId(), month, year); txtCongT2T6.setText(String.valueOf(counts[0])); txtCongCuoiTuan.setText(String.valueOf(counts[1]));
         };
         cbNhanVienTinhLuong.addActionListener(e -> autoFillDays.run()); cbMonth.addActionListener(e -> autoFillDays.run()); cbYear.addActionListener(e -> autoFillDays.run());
         btnCal.addActionListener(e -> {
             try {
-                if(cbNhanVienTinhLuong.getSelectedIndex() == -1) return; Employee emp = EmployeeManager.getInstance().getAllEmployees().get(cbNhanVienTinhLuong.getSelectedIndex());
-                int ngayT2T6 = Integer.parseInt(txtCongT2T6.getText()); int ngayCuoiTuan = Integer.parseInt(txtCongCuoiTuan.getText()); double thuong = Double.parseDouble(txtBonus.getText());
-                int congHeSo1 = ngayT2T6; int congHeSo2 = ngayCuoiTuan;
-                if (ngayT2T6 < 22) { int ngayThieu = 22 - ngayT2T6; if (ngayCuoiTuan <= ngayThieu) { congHeSo1 += ngayCuoiTuan; congHeSo2 = 0; } else { congHeSo1 = 22; congHeSo2 = ngayCuoiTuan - ngayThieu; } }
-                double luongMotNgay = emp.getBaseSalary() / 22.0; double thucLinh = (luongMotNgay * congHeSo1) + ((luongMotNgay * 2) * congHeSo2) + thuong;
-                m.addRow(new Object[]{emp.getName(), cbMonth.getSelectedItem() + "/" + cbYear.getSelectedItem(), congHeSo1, congHeSo2, String.format("%,.0f VNĐ", thucLinh)});
+                if(cbNhanVienTinhLuong.getSelectedIndex() == -1) {
+                    JOptionPane.showMessageDialog(this, "Vui lòng chọn một nhân viên!");
+                    return;
+                }
+                Employee emp = EmployeeManager.getInstance().getAllEmployees().get(cbNhanVienTinhLuong.getSelectedIndex());
+                int month = (Integer) cbMonth.getSelectedItem();
+                int year = (Integer) cbYear.getSelectedItem();
+                double bonus = Double.parseDouble(txtBonus.getText().replace(",", ""));
+
+                // Gọi lớp tính lương chuyên dụng, không viết logic ở UI
+                SalaryRecord record = SalaryCalculator.calculateSalary(emp, month, year, bonus);
+                m.addRow(new Object[]{record.getEmployeeName(), record.getMonthYear(), record.getFinalRegularDays(), record.getFinalOvertimeDays(), String.format("%,.0f VNĐ", record.getPenalty()), String.format("%,.0f VNĐ", record.getFinalSalary())});
             } catch(Exception ex) { JOptionPane.showMessageDialog(this, "Vui lòng nhập đúng định dạng số!"); }
         });
         p.add(content, BorderLayout.CENTER); return p;
@@ -675,7 +717,7 @@ public class DashboardUI extends JFrame {
         String sql = "SELECT id, name, login_username FROM employees WHERE account_username = ? AND status = 'PENDING'";
         try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
              pstmt.setString(1, EmployeeManager.getInstance().getCurrentUsername());
-             try(ResultSet rs = pstmt.executeQuery()) { while(rs.next()) { model.addRow(new Object[]{ rs.getString("id"), rs.getString("name"), rs.getString("login_username"), "Chờ duyệt" }); } }
+             try(ResultSet rs = pstmt.executeQuery()) { while(rs.next()) { model.addRow(new Object[]{ rs.getString("id"), rs.getString("name"), rs.getString("login_username"), "Chờ duyệt" }); } } 
         } catch (Exception e) {}
     }
 
@@ -783,5 +825,87 @@ public class DashboardUI extends JFrame {
         dialog.add(p, BorderLayout.CENTER);
         dialog.add(bottomPanel, BorderLayout.SOUTH);
         dialog.setVisible(true);
+    }
+
+    // =======================================================
+    // GIAO VIỆC CHO NHÂN VIÊN CỤ THỂ
+    // =======================================================
+    private JPanel createGiaoViecPanel() {
+        JPanel p = new JPanel(new BorderLayout(0, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        
+        JPanel headerPanel = new JPanel(new BorderLayout()); headerPanel.setOpaque(false);
+        JLabel title = new JLabel("Giao Việc Cho Nhân Viên"); title.setFont(new Font("Tahoma", Font.BOLD, 26)); title.setForeground(TEXT_PRIMARY); headerPanel.add(title, BorderLayout.WEST);
+        
+        JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 5)); statsPanel.setOpaque(false);
+        JLabel lblTotalTasks = new JLabel("Tổng đã giao: 0"); lblTotalTasks.setFont(new Font("Tahoma", Font.BOLD, 16)); lblTotalTasks.setForeground(new Color(59, 130, 246));
+        JLabel lblCompletedTasks = new JLabel("Hoàn thành: 0"); lblCompletedTasks.setFont(new Font("Tahoma", Font.BOLD, 16)); lblCompletedTasks.setForeground(new Color(16, 185, 129));
+        statsPanel.add(lblTotalTasks); statsPanel.add(lblCompletedTasks);
+        headerPanel.add(statsPanel, BorderLayout.EAST);
+        p.add(headerPanel, BorderLayout.NORTH);
+        
+        JPanel content = new JPanel(new BorderLayout(20, 0)); content.setOpaque(false);
+        
+        JPanel formPanel = new JPanel(new BorderLayout(0, 15)); formPanel.setBackground(BG_CARD); formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        JPanel inputPanel = new JPanel(new GridLayout(4, 1, 5, 5)); inputPanel.setOpaque(false);
+        JLabel lblEmp = new JLabel("Chọn Nhân viên nhận việc:"); lblEmp.setForeground(TEXT_PRIMARY); lblEmp.setFont(new Font("Tahoma", Font.BOLD, 14));
+        cbGiaoViecNhanVien = new JComboBox<>();
+        
+        JLabel lblTitle = new JLabel("Tiêu đề công việc:"); lblTitle.setForeground(TEXT_PRIMARY); lblTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
+        JTextField txtTaskTitle = new RoundedTextField();
+        
+        inputPanel.add(lblEmp); inputPanel.add(cbGiaoViecNhanVien);
+        inputPanel.add(lblTitle); inputPanel.add(txtTaskTitle);
+        formPanel.add(inputPanel, BorderLayout.NORTH);
+        
+        JPanel descPanel = new JPanel(new BorderLayout(0, 5)); descPanel.setOpaque(false);
+        JLabel lblDesc = new JLabel("Nội dung chi tiết:"); lblDesc.setForeground(TEXT_PRIMARY); lblDesc.setFont(new Font("Tahoma", Font.BOLD, 14));
+        JTextArea txtTaskDesc = new JTextArea(8, 20); txtTaskDesc.setLineWrap(true); txtTaskDesc.setWrapStyleWord(true); txtTaskDesc.setFont(new Font("Tahoma", Font.PLAIN, 14));
+        descPanel.add(lblDesc, BorderLayout.NORTH); descPanel.add(new JScrollPane(txtTaskDesc), BorderLayout.CENTER);
+        
+        formPanel.add(descPanel, BorderLayout.CENTER);
+        
+        JButton btnAssign = new RoundedButton("🚀 Giao việc ngay"); btnAssign.setBackground(COLOR_ORANGE); btnAssign.setForeground(Color.WHITE); btnAssign.setFont(new Font("Tahoma", Font.BOLD, 14)); btnAssign.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        formPanel.add(btnAssign, BorderLayout.SOUTH);
+        content.add(formPanel, BorderLayout.NORTH);
+        
+        JPanel historyPanel = new JPanel(new BorderLayout()); historyPanel.setOpaque(false);
+        JLabel lblHistory = new JLabel("Lịch sử các công việc đã giao:"); lblHistory.setFont(new Font("Tahoma", Font.BOLD, 16)); lblHistory.setForeground(TEXT_SECONDARY);
+        DefaultTableModel model = new DefaultTableModel(new String[]{"Thời gian", "Nội dung công việc", "Trạng thái"}, 0) { @Override public boolean isCellEditable(int row, int column) { return false; } };
+        JTable tblHistory = new FixedTable(model); tblHistory.setRowHeight(35);
+        tblHistory.getColumnModel().getColumn(0).setPreferredWidth(120); tblHistory.getColumnModel().getColumn(0).setMaxWidth(150);
+        tblHistory.getColumnModel().getColumn(2).setPreferredWidth(150); tblHistory.getColumnModel().getColumn(2).setMaxWidth(180);
+        List<String[]> notifs = EmployeeManager.getInstance().getNotifications(EmployeeManager.getInstance().getCurrentUsername());
+        int[] taskStats = {0, 0}; // [0]: Tổng, [1]: Hoàn thành
+        for (String[] n : notifs) { 
+            if (n[1].startsWith("📌 [GIAO VIỆC")) {
+                taskStats[0]++;
+                boolean isDone = n[1].endsWith("[HOÀN THÀNH]");
+                if (isDone) taskStats[1]++;
+                String taskContent = isDone ? n[1].replace(" [HOÀN THÀNH]", "") : n[1];
+                model.addRow(new Object[]{n[0], taskContent, isDone ? "✅ Hoàn thành" : "⏳ Chưa hoàn thành"}); 
+            } 
+        }
+        lblTotalTasks.setText("Tổng đã giao: " + taskStats[0]); lblCompletedTasks.setText("Hoàn thành: " + taskStats[1]);
+        historyPanel.add(lblHistory, BorderLayout.NORTH); historyPanel.add(new JScrollPane(tblHistory), BorderLayout.CENTER);
+        
+        JButton btnMarkDone = new RoundedButton("✔ Đánh dấu Hoàn thành"); btnMarkDone.setBackground(new Color(16, 185, 129)); btnMarkDone.setForeground(Color.WHITE);
+        btnMarkDone.addActionListener(e -> {
+            int r = tblHistory.getSelectedRow(); if (r == -1) { JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 công việc trong bảng để đánh dấu!"); return; }
+            if (model.getValueAt(r, 2).toString().contains("Hoàn thành")) { JOptionPane.showMessageDialog(this, "Công việc này đã được đánh dấu hoàn thành rồi!"); return; }
+            String taskContent = model.getValueAt(r, 1).toString(); EmployeeManager.getInstance().markTaskCompleted(taskContent, EmployeeManager.getInstance().getCurrentUsername());
+            model.setValueAt("✅ Hoàn thành", r, 2); taskStats[1]++; lblCompletedTasks.setText("Hoàn thành: " + taskStats[1]); JOptionPane.showMessageDialog(this, "Đã cập nhật trạng thái công việc thành Hoàn thành!");
+        });
+        JPanel historyBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT)); historyBottom.setOpaque(false); historyBottom.add(btnMarkDone); historyPanel.add(historyBottom, BorderLayout.SOUTH);
+        content.add(historyPanel, BorderLayout.CENTER);
+
+        btnAssign.addActionListener(e -> {
+            if (cbGiaoViecNhanVien.getSelectedIndex() == -1) { JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên!"); return; }
+            String empStr = cbGiaoViecNhanVien.getSelectedItem().toString(); String taskTitle = txtTaskTitle.getText().trim(); String taskDesc = txtTaskDesc.getText().trim();
+            if (taskTitle.isEmpty() || taskDesc.isEmpty()) { JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ tiêu đề và nội dung công việc!"); return; }
+            String msg = "📌 [GIAO VIỆC - " + empStr + "] " + taskTitle + ":\n" + taskDesc; EmployeeManager.getInstance().sendNotification(msg);
+            model.insertRow(0, new Object[]{java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), msg, "⏳ Chưa hoàn thành"});
+            taskStats[0]++; lblTotalTasks.setText("Tổng đã giao: " + taskStats[0]); JOptionPane.showMessageDialog(this, "✅ Đã giao việc thành công! Thông báo đã được gửi đến " + empStr); txtTaskTitle.setText(""); txtTaskDesc.setText(""); });
+        p.add(content, BorderLayout.CENTER); return p;
     }
 }

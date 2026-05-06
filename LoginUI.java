@@ -106,10 +106,9 @@ public class LoginUI extends JFrame {
 
         Preferences prefs = Preferences.userNodeForPackage(LoginUI.class);
         String savedUser = prefs.get("savedUser", "");
-        String savedPass = prefs.get("savedPass", "");
         if (!savedUser.isEmpty()) {
             txtUser.setText(savedUser);
-            txtPass.setText(savedPass);
+            // Không tự động điền mật khẩu để tăng bảo mật
             chkRemember.setSelected(true);
         }
 
@@ -120,8 +119,12 @@ public class LoginUI extends JFrame {
 
             String role = EmployeeManager.getInstance().authenticateUser(u, p);
             if (role != null) {
-                if (chkRemember.isSelected()) { prefs.put("savedUser", u); prefs.put("savedPass", p); } 
-                else { prefs.remove("savedUser"); prefs.remove("savedPass"); }
+                // Cải tiến bảo mật: Chỉ lưu tên đăng nhập, không bao giờ lưu mật khẩu
+                if (chkRemember.isSelected()) { 
+                    prefs.put("savedUser", u);
+                } else { 
+                    prefs.remove("savedUser");
+                }
 
                 if (role.equals("ADMIN")) { 
                     new DashboardUI(); 
@@ -144,7 +147,6 @@ public class LoginUI extends JFrame {
                                 return;
                             }
                             EmployeeManager.getInstance().changePassword(u, newPass);
-                            if (chkRemember.isSelected()) prefs.put("savedPass", newPass);
                             JOptionPane.showMessageDialog(this, "✅ Đổi mật khẩu thành công!");
                         } else { 
                             EmployeeManager.getInstance().logoutUser(); 

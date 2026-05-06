@@ -95,7 +95,9 @@ public class EmployeeManager {
             pstmt.setString(2, id);
             pstmt.setString(3, currentUsername); 
             pstmt.executeUpdate();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // ĐÃ THÊM: Sếp cập nhật Phòng ban & Chức vụ
@@ -108,7 +110,9 @@ public class EmployeeManager {
             pstmt.setString(3, id); 
             pstmt.setString(4, currentUsername); 
             pstmt.executeUpdate();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // =========================================================
@@ -122,7 +126,9 @@ public class EmployeeManager {
             pstmt.setString(1, id);
             pstmt.setString(2, currentUsername); 
             pstmt.executeUpdate();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // =========================================================
@@ -151,7 +157,10 @@ public class EmployeeManager {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id);
             return pstmt.executeQuery().next();
-        } catch (Exception e) { return true; } 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true;
+        } 
     }
 
     public void importEmployeeFromExcel(String name, String dep, String pos, double salary) {
@@ -162,7 +171,9 @@ public class EmployeeManager {
              PreparedStatement pstmt = conn.prepareStatement(insertUserSql)) {
             pstmt.setString(1, empId);
             pstmt.executeUpdate();
-        } catch(Exception e) {}
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
 
         Employee newEmp = new Employee(empId, name, dep, pos, salary);
         addEmployee(newEmp);
@@ -172,15 +183,21 @@ public class EmployeeManager {
     // 5. HỆ THỐNG CHẤM CÔNG MỚI (LƯU THEO GIỜ THỰC TẾ)
     // =========================================================
     public void checkIn(String empId, LocalDate date, LocalTime time) {
-        String sql = "INSERT INTO timekeeping (employee_id, work_date, check_in) VALUES (?, ?, ?) " +
-                     "ON DUPLICATE KEY UPDATE check_in = VALUES(check_in)";
+        // Loại bỏ VALUES(check_in) ở cuối và thay bằng dấu ?
+        String sql = "INSERT INTO timekeeping (employee_id, work_date, check_in) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE check_in = ?";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             
             pstmt.setString(1, empId);
             pstmt.setDate(2, java.sql.Date.valueOf(date));
             pstmt.setTime(3, java.sql.Time.valueOf(time)); 
+            
+            // Truyền thêm tham số thứ 4
+            pstmt.setTime(4, java.sql.Time.valueOf(time)); 
+            
             pstmt.executeUpdate();
             System.out.println("✅ Check-in thành công cho ID: " + empId);
+            
         } catch (Exception e) {
             System.out.println("❌ LỖI KHI CHECK-IN: " + e.getMessage());
             e.printStackTrace(); 
@@ -259,6 +276,47 @@ public class EmployeeManager {
         return counts;
     }
 
+    // ĐÃ THÊM: Tính toán số tiền phạt đi muộn > 5 phút và tan ca sớm (ko đủ 8h)
+    public double getAttendancePenalty(String empId, int month, int year, double dailyRate) {
+        double penalty = 0;
+        double hourlyRate = dailyRate / 8.0; // Quy đổi lương 1 ngày ra lương 1 giờ (Mặc định 8 tiếng)
+        
+        String sql = "SELECT t.check_in, t.check_out, s.shift FROM timekeeping t " +
+                     "JOIN schedules s ON t.employee_id = s.employee_id AND t.work_date = s.work_date " +
+                     "WHERE t.employee_id = ? AND MONTH(t.work_date) = ? AND YEAR(t.work_date) = ?";
+                     
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, empId); pstmt.setInt(2, month); pstmt.setInt(3, year);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                Time sqlIn = rs.getTime("check_in"); Time sqlOut = rs.getTime("check_out"); String shift = rs.getString("shift");
+                if (sqlIn == null) continue;
+                
+                LocalTime inTime = sqlIn.toLocalTime();
+                LocalTime expectedStart = null;
+                if (shift != null && shift.startsWith("Ca 1")) expectedStart = LocalTime.of(8, 0);
+                else if (shift != null && shift.startsWith("Ca 2")) expectedStart = LocalTime.of(12, 0);
+                
+                if (expectedStart != null) {
+                    long lateMinutes = java.time.Duration.between(expectedStart, inTime).toMinutes();
+                    if (lateMinutes > 5) penalty += (lateMinutes / 60.0) * hourlyRate; // Phạt số tiền tương ứng số phút đi muộn
+                }
+                
+                if (sqlOut != null) {
+                    LocalTime outTime = sqlOut.toLocalTime();
+                    long workedMinutes = java.time.Duration.between(inTime, outTime).toMinutes();
+                    if (workedMinutes > 0 && workedMinutes < 480) { // Không đủ 8 tiếng (480 phút)
+                        long missingMinutes = 480 - workedMinutes;
+                        penalty += (missingMinutes / 60.0) * hourlyRate; // Phạt số tiền tương ứng số phút làm thiếu
+                    }
+                }
+            }
+        } catch (Exception e) { System.out.println("❌ LỖI TÍNH TIỀN PHẠT: " + e.getMessage()); }
+        return penalty;
+    }
+
     public void saveAttendance(String empId, LocalDate date, boolean isPresent) {}
     
     // ĐÃ HOÀN THIỆN: Kiểm tra xem hôm nay đã chấm công chưa
@@ -286,7 +344,9 @@ public class EmployeeManager {
             pstmt.setString(1, name);
             pstmt.setString(2, currentUsername);
             pstmt.executeUpdate();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public List<String> getAllDepartments() {
@@ -355,18 +415,27 @@ public class EmployeeManager {
                 if (email.equals(rs.getString("email"))) return "Email này đã được sử dụng!";
                 if (phone.equals(rs.getString("phone"))) return "Số điện thoại này đã được sử dụng!";
             }
-            
-            String compCode = "COMP" + (1000 + new Random().nextInt(9000));
-            
-            insertStmt.setString(1, username);
-            insertStmt.setString(2, password); 
-            insertStmt.setString(3, compCode);
-            insertStmt.setString(4, fullName);
-            insertStmt.setString(5, email);
-            insertStmt.setString(6, phone);
-            insertStmt.executeUpdate();
-            return "SUCCESS";
-        } catch (Exception e) { return "Lỗi: " + e.getMessage(); }
+
+            // Bắt đầu Transaction
+            conn.setAutoCommit(false);
+            try {
+                String compCode = "COMP" + (1000 + new Random().nextInt(9000));
+                
+                insertStmt.setString(1, username);
+                insertStmt.setString(2, password); 
+                insertStmt.setString(3, compCode);
+                insertStmt.setString(4, fullName);
+                insertStmt.setString(5, email);
+                insertStmt.setString(6, phone);
+                insertStmt.executeUpdate();
+
+                conn.commit(); // Lưu nếu không có lỗi
+                return "SUCCESS";
+            } catch (Exception ex) {
+                conn.rollback(); // Hoàn tác nếu có lỗi
+                throw ex; // Ném lỗi ra ngoài
+            }
+        } catch (Exception e) { e.printStackTrace(); return "Lỗi hệ thống: " + e.getMessage(); }
     }
 
     public String registerEmployee(String username, String password, String fullName, String companyCode, String email, String phone) {
@@ -396,21 +465,29 @@ public class EmployeeManager {
                 if (phone.equals(rsCheck.getString("phone"))) return "Số điện thoại này đã được sử dụng!";
             }
 
-            insertUserStmt.setString(1, username);
-            insertUserStmt.setString(2, password);
-            insertUserStmt.setString(3, fullName);
-            insertUserStmt.setString(4, email);
-            insertUserStmt.setString(5, phone);
-            insertUserStmt.executeUpdate();
-
-            String randomId = generateEmployeeId();
-            insertEmpStmt.setString(1, randomId);
-            insertEmpStmt.setString(2, fullName);
-            insertEmpStmt.setString(3, bossUsername); 
-            insertEmpStmt.setString(4, username);     
-            insertEmpStmt.executeUpdate();
-
-            return "SUCCESS";
+            // Bắt đầu Transaction để tránh dữ liệu bị mồ côi (rác)
+            conn.setAutoCommit(false);
+            try {
+                insertUserStmt.setString(1, username);
+                insertUserStmt.setString(2, password);
+                insertUserStmt.setString(3, fullName);
+                insertUserStmt.setString(4, email);
+                insertUserStmt.setString(5, phone);
+                insertUserStmt.executeUpdate();
+    
+                String randomId = generateEmployeeId();
+                insertEmpStmt.setString(1, randomId);
+                insertEmpStmt.setString(2, fullName);
+                insertEmpStmt.setString(3, bossUsername); 
+                insertEmpStmt.setString(4, username);     
+                insertEmpStmt.executeUpdate();
+    
+                conn.commit(); // Lưu vĩnh viễn nếu cả 2 lệnh trên đều thành công
+                return "SUCCESS";
+            } catch (Exception ex) {
+                conn.rollback(); // Hoàn tác (Hủy insert vào users) nếu có lỗi xảy ra
+                throw ex; // Ném lỗi ra ngoài để khối catch cha bên dưới bắt lại
+            }
         } catch (Exception e) { return "Lỗi hệ thống: " + e.getMessage(); }
     }
 
@@ -426,7 +503,9 @@ public class EmployeeManager {
                 currentUserRole = rs.getString("role");
                 return currentUserRole; 
             }
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null; 
     }
     
@@ -437,7 +516,9 @@ public class EmployeeManager {
             pstmt.setString(1, newPassword);
             pstmt.setString(2, username);
             pstmt.executeUpdate();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public boolean resetPassword(String username, String email, String newPassword) {
@@ -466,7 +547,9 @@ public class EmployeeManager {
             pstmt.setString(1, currentUsername);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) return rs.getString("company_code");
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "N/A";
     }
 
@@ -517,7 +600,9 @@ public class EmployeeManager {
             pstmt.setString(1, currentUsername);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) return rs.getString("status");
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "NO_JOB"; 
     }
 
@@ -527,17 +612,21 @@ public class EmployeeManager {
     public void sendNotification(String message) {
         String sql = "INSERT INTO notifications (account_username, message, created_at) VALUES (?, ?, ?)";
         try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, currentUsername); pstmt.setString(2, message); pstmt.setDate(3, java.sql.Date.valueOf(LocalDate.now())); pstmt.executeUpdate();
-        } catch (Exception e) {}
+            pstmt.setString(1, currentUsername); pstmt.setString(2, message); pstmt.setTimestamp(3, new Timestamp(System.currentTimeMillis())); pstmt.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public List<String[]> getNotifications(String adminUsername) {
         List<String[]> list = new ArrayList<>();
-        String sql = "SELECT message, created_at FROM notifications WHERE account_username = ? ORDER BY created_at DESC";
+        String sql = "SELECT message, created_at FROM notifications WHERE account_username = ? ORDER BY created_at DESC LIMIT 50";
         try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, adminUsername); ResultSet rs = pstmt.executeQuery();
-            while(rs.next()){ list.add(new String[]{rs.getDate("created_at").toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), rs.getString("message")}); }
-        } catch (Exception e) {}
+            while(rs.next()){ list.add(new String[]{rs.getTimestamp("created_at").toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), rs.getString("message")}); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -546,33 +635,53 @@ public class EmployeeManager {
         try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, currentUsername); ResultSet rs = pstmt.executeQuery();
             if (rs.next()) return rs.getString("account_username");
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
     // ĐÃ SỬA: Thêm hiển thị lỗi chi tiết khi lưu lịch
     public void saveSchedule(String empId, LocalDate date, String shift) {
-        String sql = "INSERT INTO schedules (employee_id, work_date, shift) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE shift = VALUES(shift)";
-        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        // Loại bỏ VALUES(shift) ở cuối và thay bằng dấu ?
+        String sql = "INSERT INTO schedules (employee_id, work_date, shift) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE shift = ?";
+        try (Connection conn = DatabaseHelper.getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             
             pstmt.setString(1, empId); 
             pstmt.setDate(2, java.sql.Date.valueOf(date)); 
             pstmt.setString(3, shift); 
+            
+            // Truyền thêm tham số thứ 4 để cập nhật nếu đã có lịch
+            pstmt.setString(4, shift); 
+            
             pstmt.executeUpdate();
-            System.out.println("✅ Đã lưu lịch làm việc cho: " + empId + " ngày " + date);
+            System.out.println("✅ Đã lưu lịch làm việc cho: " + empId + " ngày " + date + " | Ca: " + shift);
+            
         } catch (Exception e) {
             System.out.println("❌ LỖI KHI LƯU LỊCH LÀM VIỆC: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    // ĐÃ SỬA: Thêm hiển thị lỗi chi tiết khi lấy lịch
+    // ĐÃ NÂNG CẤP 2: Chống lỗi giá trị rỗng (null) từ Cơ sở dữ liệu
     public String getSchedule(String empId, LocalDate date) {
         String sql = "SELECT shift FROM schedules WHERE employee_id = ? AND work_date = ?";
-        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DatabaseHelper.getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             
             pstmt.setString(1, empId); 
             pstmt.setDate(2, java.sql.Date.valueOf(date)); 
             ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) return rs.getString("shift");
+            
+            if (rs.next()) {
+                String shift = rs.getString("shift");
+                // Nếu trong MySQL có cột nhưng bị trống chữ, vẫn coi là chưa đăng ký
+                if (shift == null || shift.trim().isEmpty()) {
+                    return "Chưa đăng ký";
+                }
+                return shift;
+            }
         } catch (Exception e) {
             System.out.println("❌ LỖI KHI TÌM LỊCH LÀM VIỆC: " + e.getMessage());
             e.printStackTrace();
@@ -672,5 +781,16 @@ public class EmployeeManager {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // ĐÃ THÊM: Cập nhật trạng thái công việc thành Hoàn thành
+    public void markTaskCompleted(String originalMessage, String adminUsername) {
+        String sql = "UPDATE notifications SET message = ? WHERE account_username = ? AND message = ?";
+        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, originalMessage + " [HOÀN THÀNH]");
+            pstmt.setString(2, adminUsername);
+            pstmt.setString(3, originalMessage);
+            pstmt.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
     }
 }
