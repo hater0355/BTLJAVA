@@ -130,13 +130,26 @@ public class LoginUI extends JFrame {
                 else {
                     if (p.equals("123")) {
                         JPasswordField pf = new JPasswordField();
-                        if (JOptionPane.showConfirmDialog(this, pf, "⚠️ Vui lòng nhập mật khẩu mới của riêng bạn để tiếp tục:", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                        // FIX: Sửa lỗi JOptionPane bị cắt
+                        if (JOptionPane.showConfirmDialog(this, pf, 
+                            "⚠️ Vui lòng nhập mật khẩu mới của riêng bạn để tiếp tục:", 
+                            JOptionPane.OK_CANCEL_OPTION,
+                            JOptionPane.QUESTION_MESSAGE) == JOptionPane.OK_OPTION) {
+                            
                             String newPass = new String(pf.getPassword());
-                            if (newPass.isEmpty() || newPass.equals("123")) { JOptionPane.showMessageDialog(this, "Mật khẩu mới không được để trống!"); EmployeeManager.getInstance().logoutUser(); return; }
+                            // FIX: Sửa lỗi EmployeeManager bị cắt
+                            if (newPass.isEmpty() || newPass.equals("123")) { 
+                                JOptionPane.showMessageDialog(this, "Mật khẩu mới không được để trống!"); 
+                                EmployeeManager.getInstance().logoutUser();
+                                return;
+                            }
                             EmployeeManager.getInstance().changePassword(u, newPass);
                             if (chkRemember.isSelected()) prefs.put("savedPass", newPass);
                             JOptionPane.showMessageDialog(this, "✅ Đổi mật khẩu thành công!");
-                        } else { EmployeeManager.getInstance().logoutUser(); return; }
+                        } else { 
+                            EmployeeManager.getInstance().logoutUser(); 
+                            return; 
+                        }
                     }
                     
                     // ========================================================
