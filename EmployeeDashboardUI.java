@@ -381,7 +381,7 @@ private void renderCalendarGrid() {
 
         if (currentShift.startsWith("Hành chính") || currentShift.startsWith("Ca Sáng") || currentShift.startsWith("Ca Chiều")) {
             String[] options = {"Xin nghỉ đột xuất", "Đóng"};
-            int choice = JOptionPane.showOptionDialog(this, "Ngày " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " đang có ca làm.\nBạn muốn làm gì?", "Tùy chọn", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+            int choice = JOptionPane.showOptionDialog(this, "Ngày " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " đang có ca làm.\nBạn muốn làm gì?", "Tùy chọn", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
             
             if (choice == 0) {
                 String reason = JOptionPane.showInputDialog(this, "Nhập lý do xin nghỉ phép (Bắt buộc):");
@@ -504,7 +504,9 @@ private void renderCalendarGrid() {
 
         btnCheckIn.addActionListener(e -> {
             String shiftToday = EmployeeManager.getInstance().getSchedule(myProfile.getId(), today);
-            if (!shiftToday.startsWith("Hành chính") && !shiftToday.startsWith("Ca Sáng") && !shiftToday.startsWith("Ca Chiều")) {
+            System.out.println("🔍 DEBUG - shiftToday: [" + shiftToday + "]");
+            // FIX: Kiểm tra Ca 1 và Ca 2 thay vì Hành chính, Ca Sáng, Ca Chiều
+            if (!shiftToday.startsWith("Ca 1") && !shiftToday.startsWith("Ca 2")) {
                 JOptionPane.showMessageDialog(this, "Hôm nay bạn không có ca làm việc.\nVui lòng đăng ký lịch làm trước khi chấm công!", "Lỗi chấm công", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -565,7 +567,7 @@ private void renderCalendarGrid() {
         title.setAlignmentX(Component.CENTER_ALIGNMENT); 
         title.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
         
-        JLabel msg = new JLabel("<html><div style='text-align: center;'>Tài khoản của bạn hiện không trực thuộc Công ty nào.<br>Vui lòng nhập Mã Công Ty mới để nộp hồ sơ xin việc:</div></html>"); 
+        JLabel msg = new JLabel("<html><div style='text-align: center;'>Tài khoản của bạn hiện không trực thuộc Công ty nào.<br>Vui lòng nhập Mã Công Ty mới để nộp hồ sơ xin việc.</div></html>"); 
         msg.setFont(new Font("Tahoma", Font.PLAIN, 16)); 
         msg.setForeground(TEXT_PRIMARY); 
         msg.setAlignmentX(Component.CENTER_ALIGNMENT);
