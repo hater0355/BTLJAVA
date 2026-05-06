@@ -51,7 +51,7 @@ public class DashboardUI extends JFrame {
     private DefaultTableModel vangMatModel;
 
     public DashboardUI() {
-        setTitle("Hệ Thống Quản Lý Lương & Chấm Công - Dành cho Giám Đốc");
+        setTitle("Hệ Thống Quản Lý Công Ty - Dành cho Giám Đốc");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
@@ -129,7 +129,7 @@ public class DashboardUI extends JFrame {
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         if (!isDarkMode) sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(229, 231, 235)));
 
-        JLabel logo = new JLabel(" QUẢN LÝ LƯƠNG");
+        JLabel logo = new JLabel(" QUẢN LÝ CÔNG TY");
         logo.setForeground(COLOR_ORANGE); logo.setFont(new Font("Tahoma", Font.BOLD, 18));
         logo.setBorder(BorderFactory.createEmptyBorder(40, 20, 40, 10)); logo.setAlignmentX(Component.LEFT_ALIGNMENT); 
         sidebar.add(logo);
@@ -193,17 +193,56 @@ public class DashboardUI extends JFrame {
         namePanel.add(lblName); namePanel.add(lblRole);
         header.add(lblAvatar, BorderLayout.WEST); header.add(namePanel, BorderLayout.CENTER); popup.add(header); popup.addSeparator();
 
-        JMenuItem itemCode = new JMenuItem("📋 Mã Cty: " + EmployeeManager.getInstance().getMyCompanyCode());
+        JMenuItem itemCode = new JMenuItem(" Mã Cty: " + EmployeeManager.getInstance().getMyCompanyCode());
+        itemCode.setIcon(new CustomMenuIcon(10));
         itemCode.setFont(new Font("Tahoma", Font.BOLD, 14)); itemCode.setBackground(Color.WHITE); itemCode.setForeground(Color.BLACK); itemCode.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15)); itemCode.setCursor(new Cursor(Cursor.HAND_CURSOR));
         itemCode.addActionListener(e -> { Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(EmployeeManager.getInstance().getMyCompanyCode()), null); JOptionPane.showMessageDialog(this, "Đã copy mã công ty vào khay nhớ tạm!"); });
         popup.add(itemCode);
         
-        JMenuItem itemTheme = new JMenuItem(isDarkMode ? "☀ Đổi sang Nền Sáng" : "🌙 Đổi sang Nền Tối");
-        itemTheme.setFont(new Font("Tahoma", Font.BOLD, 14)); itemTheme.setBackground(Color.WHITE); itemTheme.setForeground(new Color(59, 130, 246)); itemTheme.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15)); itemTheme.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        itemTheme.addActionListener(e -> { isDarkMode = !isDarkMode; new DashboardUI(); dispose(); });
-        popup.add(itemTheme); popup.addSeparator();
+// --- BẮT ĐẦU PHẦN THANH TRƯỢT GIAO DIỆN ---
+        // Tạo một bảng chứa (Panel) để nhóm chữ và thanh trượt lại với nhau
+        JPanel themePanel = new JPanel(new BorderLayout());
+        themePanel.setBackground(Color.WHITE);
+        themePanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15)); // Căn lề cho đẹp
+        
+        // Nhãn văn bản
+        JLabel lblTheme = new JLabel("Chế độ Tối (Dark Mode)");
+        lblTheme.setFont(new Font("Tahoma", Font.BOLD, 14));
+        lblTheme.setForeground(Color.BLACK);
 
-        JMenuItem itemLogout = new JMenuItem("🚪 Đăng xuất");
+        // Khởi tạo thanh trượt mà chúng ta đã làm
+        ToggleSwitch toggleTheme = new ToggleSwitch();
+        toggleTheme.setSelected(isDarkMode); // Đặt trạng thái thanh trượt khớp với giao diện hiện hành
+        
+        // Bắt sự kiện khi Giám đốc nhấp chuột vào thanh trượt
+        toggleTheme.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                isDarkMode = toggleTheme.isSelected(); // Lưu lại lựa chọn
+                
+                // Sử dụng Timer để tạo độ trễ 200 mili-giây
+                // Việc này giúp thanh trượt có thời gian chạy hiệu ứng hoạt hình trước khi đổi màu
+                Timer delayLoadTimer = new Timer(200, evt -> {
+                    popup.setVisible(false);   // Ẩn bảng menu đi
+                    new DashboardUI();         // TẢI LẠI TRANG GIÁM ĐỐC với màu mới
+                    dispose();                 // Đóng cửa sổ cũ
+                });
+                
+                delayLoadTimer.setRepeats(false); // Chỉ chạy bộ đếm thời gian 1 lần
+                delayLoadTimer.start();           // Bắt đầu đếm
+            }
+        });
+
+        // Gắn chữ vào bên trái, thanh trượt vào bên phải của bảng chứa
+        themePanel.add(lblTheme, BorderLayout.WEST);
+        themePanel.add(toggleTheme, BorderLayout.EAST);
+        
+        // Đưa toàn bộ bảng chứa này vào trong Popup Menu
+        popup.add(themePanel);
+        popup.addSeparator(); // Vẽ một đường kẻ ngang ngăn cách
+        // --- KẾT THÚC PHẦN THANH TRƯỢT GIAO DIỆN ---
+        JMenuItem itemLogout = new JMenuItem("Đăng xuất"); 
+        itemLogout.setIcon(new CustomMenuIcon(9));
         itemLogout.setFont(new Font("Tahoma", Font.BOLD, 14)); itemLogout.setBackground(Color.WHITE); itemLogout.setForeground(new Color(220, 38, 38)); itemLogout.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15)); itemLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
         itemLogout.addActionListener(e -> { if(JOptionPane.showConfirmDialog(this, "Đăng xuất khỏi hệ thống?", "Xác nhận", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) { EmployeeManager.getInstance().logoutUser(); new LoginUI(); dispose(); } });
         popup.add(itemLogout);
@@ -248,10 +287,29 @@ public class DashboardUI extends JFrame {
             if (r == -1) { JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 nhân viên trong bảng để xem lịch!"); return; }
             String id = tblNhanVien.getValueAt(r, 0).toString(); String name = tblNhanVien.getValueAt(r, 1).toString(); showEmployeeScheduleDialog(id, name);
         });
-
+        JButton btnViewDetails = new JButton("Xem chi tiết hồ sơ");
+        btnViewDetails.setBackground(new Color(59, 130, 246));
+        btnViewDetails.setForeground(Color.WHITE);
+        btnViewDetails.setFont(new Font("Tahoma", Font.BOLD, 13));
+        btnViewDetails.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnViewDetails.addActionListener(e -> {
+            
+            int selectedRow = tblNhanVien.getSelectedRow();
+            
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn một nhân viên từ bảng để xem chi tiết!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            
+            String empId = tblNhanVien.getValueAt(selectedRow, 0).toString();
+            
+            
+            showEmployeeDetailsDialogForAdmin(empId);
+        });
         btnGrp.add(btnImport); btnGrp.add(btnExport); btnGrp.add(btnSchedule); btnGrp.add(btnEdit); btnGrp.add(btnDel); 
         header.add(title, BorderLayout.WEST); header.add(btnGrp, BorderLayout.EAST); p.add(header, BorderLayout.NORTH);
-        tblNhanVien = new JTable(new DefaultTableModel(new String[]{"Mã NV", "Họ tên", "Phòng ban", "Chức vụ", "Lương cơ bản"}, 0)); tblNhanVien.setRowHeight(35); tblNhanVien.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); p.add(new JScrollPane(tblNhanVien), BorderLayout.CENTER);
+        tblNhanVien = new FixedTable(new DefaultTableModel(new String[]{"Mã NV", "Họ tên", "Phòng ban", "Chức vụ", "Lương cơ bản"}, 0)); tblNhanVien.setRowHeight(35); tblNhanVien.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); p.add(new JScrollPane(tblNhanVien), BorderLayout.CENTER);
         return p;
     }
 
@@ -367,7 +425,7 @@ public class DashboardUI extends JFrame {
         header.add(controls, BorderLayout.SOUTH);
         p.add(header, BorderLayout.NORTH);
 
-        tblNhanVienTheoPhong = new JTable(new DefaultTableModel(new String[]{"Mã NV", "Họ tên", "Chức vụ", "Lương cơ bản"}, 0)); tblNhanVienTheoPhong.setRowHeight(35); p.add(new JScrollPane(tblNhanVienTheoPhong), BorderLayout.CENTER);
+        tblNhanVienTheoPhong = new FixedTable(new DefaultTableModel(new String[]{"Mã NV", "Họ tên", "Chức vụ", "Lương cơ bản"}, 0)); tblNhanVienTheoPhong.setRowHeight(35); p.add(new JScrollPane(tblNhanVienTheoPhong), BorderLayout.CENTER);
         return p;
     }
 
@@ -473,7 +531,7 @@ public class DashboardUI extends JFrame {
         JButton btnSend = new RoundedButton("🚀 Gửi toàn công ty"); btnSend.setBackground(new Color(16, 185, 129)); btnSend.setForeground(Color.WHITE); btnSend.setFont(new Font("Tahoma", Font.BOLD, 14)); btnSend.setCursor(new Cursor(Cursor.HAND_CURSOR));
         formPanel.add(lblInstruct, BorderLayout.NORTH); formPanel.add(new JScrollPane(txtMsg), BorderLayout.CENTER); formPanel.add(btnSend, BorderLayout.SOUTH);
         JPanel historyPanel = new JPanel(new BorderLayout()); historyPanel.setOpaque(false); JLabel lblHistory = new JLabel("Lịch sử đã gửi:"); lblHistory.setFont(new Font("Tahoma", Font.BOLD, 16)); lblHistory.setForeground(TEXT_SECONDARY);
-        DefaultTableModel model = new DefaultTableModel(new String[]{"Ngày gửi", "Nội dung"}, 0); JTable tblHistory = new JTable(model); tblHistory.setRowHeight(30);
+        DefaultTableModel model = new DefaultTableModel(new String[]{"Ngày gửi", "Nội dung"}, 0); JTable tblHistory = new FixedTable(model); tblHistory.setRowHeight(30);
         List<String[]> notifs = EmployeeManager.getInstance().getNotifications(EmployeeManager.getInstance().getCurrentUsername());
         for(String[] n : notifs) { model.addRow(new Object[]{n[0], n[1]}); }
         historyPanel.add(lblHistory, BorderLayout.NORTH); historyPanel.add(new JScrollPane(tblHistory), BorderLayout.CENTER);
@@ -496,7 +554,7 @@ public class DashboardUI extends JFrame {
         JButton btnReject = new RoundedButton("❌ Từ chối"); btnReject.setBackground(new Color(239, 68, 68)); btnReject.setForeground(Color.WHITE);
 
         vangMatModel = new DefaultTableModel(new String[]{"Mã NV", "Họ Tên", "Tình trạng", "Lý do / Ca bỏ lỡ"}, 0);
-        JTable tbl = new JTable(vangMatModel); tbl.setRowHeight(35);
+        JTable tbl = new FixedTable(vangMatModel); tbl.setRowHeight(35);
 
         Runnable fetchAbsence = () -> {
             vangMatModel.setRowCount(0);
@@ -537,7 +595,7 @@ public class DashboardUI extends JFrame {
         btnPrev.addActionListener(e -> { currentMonday = currentMonday.minusWeeks(1); updateChamCongTable(); }); btnNext.addActionListener(e -> { currentMonday = currentMonday.plusWeeks(1); updateChamCongTable(); }); btnToday.addActionListener(e -> { currentMonday = LocalDate.now().with(DayOfWeek.MONDAY); updateChamCongTable(); });
         navBar.add(btnPrev); navBar.add(lblWeekDisplay); navBar.add(btnNext); navBar.add(btnToday);
         JPanel topContainer = new JPanel(new BorderLayout()); topContainer.setOpaque(false); topContainer.add(header, BorderLayout.NORTH); topContainer.add(navBar, BorderLayout.SOUTH); p.add(topContainer, BorderLayout.NORTH);
-        tblChamCong = new JTable(); tblChamCong.setRowHeight(35); p.add(new JScrollPane(tblChamCong), BorderLayout.CENTER); updateChamCongTable(); return p;
+        tblChamCong = new FixedTable(); tblChamCong.setRowHeight(35); p.add(new JScrollPane(tblChamCong), BorderLayout.CENTER); updateChamCongTable(); return p;
     }
 
     private void updateChamCongTable() {
@@ -572,7 +630,7 @@ public class DashboardUI extends JFrame {
         JButton btnCal = new RoundedButton("Tính toán & Xuất"); btnCal.setBackground(COLOR_ORANGE); btnCal.setForeground(Color.WHITE);
         form.add(new JLabel("Nhân viên:")); form.add(cbNhanVienTinhLuong); form.add(new JLabel("Chọn Tháng / Năm:")); form.add(panelThangNam); form.add(new JLabel("Tổng ngày làm T2-T6:")); form.add(txtCongT2T6); form.add(new JLabel("Tổng ngày làm T7-CN:")); form.add(txtCongCuoiTuan); form.add(new JLabel("Phụ cấp/Thưởng:")); form.add(txtBonus); form.add(new JLabel("")); form.add(btnCal);
         gbc.gridx = 0; gbc.weightx = 0.3; content.add(form, gbc);
-        DefaultTableModel m = new DefaultTableModel(new String[]{"Nhân viên", "Tháng", "Công Hệ số 1", "Công Hệ số 2", "Thực lĩnh"}, 0); JTable t = new JTable(m); t.setRowHeight(30); gbc.gridx = 1; gbc.weightx = 0.7; content.add(new JScrollPane(t), gbc);
+        DefaultTableModel m = new DefaultTableModel(new String[]{"Nhân viên", "Tháng", "Công Hệ số 1", "Công Hệ số 2", "Thực lĩnh"}, 0); JTable t = new FixedTable(m); t.setRowHeight(30); gbc.gridx = 1; gbc.weightx = 0.7; content.add(new JScrollPane(t), gbc);
         Runnable autoFillDays = () -> {
             if (isRefreshing) return; int idx = cbNhanVienTinhLuong.getSelectedIndex(); if(idx == -1) return; Employee emp = EmployeeManager.getInstance().getAllEmployees().get(idx); int month = (Integer) cbMonth.getSelectedItem(); int year = (Integer) cbYear.getSelectedItem(); int[] counts = EmployeeManager.getInstance().getAttendanceCount(emp.getId(), month, year); txtCongT2T6.setText(String.valueOf(counts[0])); txtCongCuoiTuan.setText(String.valueOf(counts[1]));
         };
@@ -609,7 +667,7 @@ public class DashboardUI extends JFrame {
         JButton btnApprove = new RoundedButton("✅ Duyệt & Phân phòng"); btnApprove.setBackground(new Color(16, 185, 129)); btnApprove.setForeground(Color.WHITE);
         btnReject.addActionListener(e -> rejectEmployee()); btnApprove.addActionListener(e -> showApproveDialog());
         btnGrp.add(btnReject); btnGrp.add(btnApprove); header.add(title, BorderLayout.WEST); header.add(btnGrp, BorderLayout.EAST); p.add(header, BorderLayout.NORTH);
-        tblXetDuyet = new JTable(new DefaultTableModel(new String[]{"Mã NV", "Họ Tên", "Tài khoản (App)", "Trạng thái"}, 0)); tblXetDuyet.setRowHeight(35); tblXetDuyet.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); p.add(new JScrollPane(tblXetDuyet), BorderLayout.CENTER); return p;
+        tblXetDuyet = new FixedTable(new DefaultTableModel(new String[]{"Mã NV", "Họ Tên", "Tài khoản (App)", "Trạng thái"}, 0)); tblXetDuyet.setRowHeight(35); tblXetDuyet.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); p.add(new JScrollPane(tblXetDuyet), BorderLayout.CENTER); return p;
     }
 
     private void loadPendingEmployees() {
@@ -671,5 +729,59 @@ public class DashboardUI extends JFrame {
                 startAngle += arcAngle; legendY += 25; colorIndex++;
             }
         }
+    }
+    private void showEmployeeDetailsDialogForAdmin(String employeeId) {
+        // Lấy thông tin nhân viên từ Database thông qua lớp EmployeeManager
+        // Ghi chú: Đảm bảo bạn đã có hàm getEmployeeProfile(String id) trả về đối tượng Employee trong EmployeeManager
+        Employee emp = EmployeeManager.getInstance().getEmployeeProfile(employeeId);
+
+        if (emp == null) {
+            JOptionPane.showMessageDialog(this, "Không tìm thấy dữ liệu của nhân viên này!");
+            return;
+        }
+
+        // Khởi tạo Hộp thoại
+        JDialog dialog = new JDialog(this, "Hồ Sơ Chi Tiết - " + emp.getName(), true);
+        dialog.setSize(450, 500);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+        dialog.getContentPane().setBackground(Color.WHITE);
+
+        JPanel p = new JPanel(new GridLayout(8, 1, 10, 5));
+        p.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+        p.setBackground(Color.WHITE);
+
+        // Chuẩn bị dữ liệu hiển thị (Tránh lỗi null nếu nhân viên chưa cập nhật hồ sơ lần đầu)
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String ngaySinh = emp.getNgaySinh() != null ? emp.getNgaySinh().format(fmt) : "Chưa cập nhật";
+        String ngayVao = emp.getNgayVaoLam() != null ? emp.getNgayVaoLam().format(fmt) : "Chưa cập nhật";
+        String lienHe = emp.getGiaDinh() != null ? emp.getGiaDinh() : "Chưa cập nhật"; 
+        String sdt = emp.getLienLacKhan() != null ? emp.getLienLacKhan() : "Chưa cập nhật";
+
+        // Gắn dữ liệu vào giao diện
+        p.add(new JLabel("<html><font size='5' color='#2563EB'><b>" + emp.getName() + "</b></font></html>"));
+        p.add(new JLabel("<html><b>Mã nhân viên:</b> " + emp.getId() + " - <b>Phòng ban:</b> " + emp.getDepartment() + "</html>"));
+        p.add(new JLabel("<html><b>Ngày sinh:</b> " + ngaySinh + "   <i>(" + emp.getTuoi() + " tuổi)</i></html>"));
+        p.add(new JLabel("<html><b>Ngày vào làm:</b> " + ngayVao + "   <i>(Thâm niên: " + emp.getThamNien() + " năm)</i></html>"));
+        p.add(new JLabel("<html><hr></html>")); 
+        p.add(new JLabel("<html><font color='#EF4444'><b>THÔNG TIN KHẨN CẤP</b></font></html>"));
+        p.add(new JLabel("<html><b>Liên hệ cho:</b> " + lienHe + "</html>"));
+        p.add(new JLabel("<html><b>Số điện thoại:</b> " + sdt + "</html>"));
+
+        // Nút Đóng
+        JButton btnClose = new JButton("Đóng hồ sơ");
+        btnClose.setBackground(new Color(229, 231, 235));
+        btnClose.setFont(new Font("Tahoma", Font.BOLD, 12));
+        btnClose.setFocusPainted(false);
+        btnClose.addActionListener(e -> dialog.dispose());
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(Color.WHITE);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
+        bottomPanel.add(btnClose);
+
+        dialog.add(p, BorderLayout.CENTER);
+        dialog.add(bottomPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
     }
 }

@@ -180,22 +180,31 @@ public class EmployeeManager {
             pstmt.setDate(2, java.sql.Date.valueOf(date));
             pstmt.setTime(3, java.sql.Time.valueOf(time)); 
             pstmt.executeUpdate();
+            System.out.println("✅ Check-in thành công cho ID: " + empId);
         } catch (Exception e) {
-    e.printStackTrace(); 
-}
+            System.out.println("❌ LỖI KHI CHECK-IN: " + e.getMessage());
+            e.printStackTrace(); 
+        }
     }
 
     public void checkOut(String empId, LocalDate date, LocalTime time) {
         String sql = "UPDATE timekeeping SET check_out = ? WHERE employee_id = ? AND work_date = ?";
+        
         try (Connection conn = DatabaseHelper.getConnection();
+             // Sửa lỗi tại dòng này: Đã bổ sung biến conn. gọi đến hàm prepareStatement
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setTime(1, java.sql.Time.valueOf(time)); 
-            pstmt.setString(2, empId);
-            pstmt.setDate(3, java.sql.Date.valueOf(date));
-            pstmt.executeUpdate();
+             
+             pstmt.setTime(1, java.sql.Time.valueOf(time)); 
+             pstmt.setString(2, empId);
+             pstmt.setDate(3, java.sql.Date.valueOf(date));
+             pstmt.executeUpdate();
+             
+             System.out.println("✅ Check-out thành công cho ID: " + empId);
+             
         } catch (Exception e) {
-    e.printStackTrace(); 
-}
+            System.out.println("❌ LỖI KHI CHECK-OUT: " + e.getMessage());
+            e.printStackTrace(); 
+        }
     }
 
     public String[] getAttendanceRecord(String empId, LocalDate date) {
@@ -209,7 +218,6 @@ public class EmployeeManager {
                 Time in = rs.getTime("check_in");
                 Time out = rs.getTime("check_out");
                 
-                // ĐÃ THÊM: TỰ ĐỘNG CHECK-OUT LÚC 23:59 NẾU QUÊN CỦA NGÀY HÔM TRƯỚC
                 if (in != null && out == null && date.isBefore(LocalDate.now())) {
                     out = java.sql.Time.valueOf("23:59:00");
                     String updateSql = "UPDATE timekeeping SET check_out = ? WHERE employee_id = ? AND work_date = ?";
@@ -225,7 +233,9 @@ public class EmployeeManager {
                 String strOut = (out != null) ? out.toString().substring(0, 5) : null;
                 return new String[]{strIn, strOut};
             }
-        } catch (Exception e) { }
+        } catch (Exception e) { 
+            System.out.println("❌ LỖI LẤY BẢN GHI CHẤM CÔNG: " + e.getMessage());
+        }
         return new String[]{null, null};
     }
 
@@ -250,7 +260,20 @@ public class EmployeeManager {
     }
 
     public void saveAttendance(String empId, LocalDate date, boolean isPresent) {}
-    public boolean checkAttendance(String empId, LocalDate date) { return false; }
+    
+    // ĐÃ HOÀN THIỆN: Kiểm tra xem hôm nay đã chấm công chưa
+    public boolean checkAttendance(String empId, LocalDate date) { 
+        String sql = "SELECT 1 FROM timekeeping WHERE employee_id = ? AND work_date = ?";
+        try (Connection conn = DatabaseHelper.getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, empId);
+            pstmt.setDate(2, java.sql.Date.valueOf(date));
+            return pstmt.executeQuery().next();
+        } catch (Exception e) { 
+            System.out.println("❌ LỖI KIỂM TRA CHẤM CÔNG: " + e.getMessage());
+            return false; 
+        } 
+    }
 
     // =========================================================
     // 6. QUẢN LÝ PHÒNG BAN (BẢNG departments)
@@ -278,8 +301,8 @@ public class EmployeeManager {
                 list.add(rs.getString("name"));
             }
         } catch (Exception e) {
-    e.printStackTrace(); 
-}
+            e.printStackTrace(); 
+        }
 
         String sqlOld = "SELECT DISTINCT department FROM employees WHERE account_username = ?";
         try (Connection conn = DatabaseHelper.getConnection();
@@ -294,8 +317,8 @@ public class EmployeeManager {
                 }
             }
         } catch (Exception e) {
-    e.printStackTrace(); 
-}
+            e.printStackTrace(); 
+        }
 
         if (list.isEmpty()) list.add("Chung"); 
         return list;
@@ -315,7 +338,6 @@ public class EmployeeManager {
         currentUserRole = null; 
     }
 
-    // ĐÃ SỬA: Đăng ký Quản lý (Thêm Tên, Email, Số điện thoại)
     public String registerAdmin(String username, String password, String fullName, String email, String phone) {
         String checkSql = "SELECT username, email, phone FROM users WHERE username = ? OR email = ? OR phone = ?";
         String insertSql = "INSERT INTO users (username, password, role, company_code, full_name, email, phone) VALUES (?, ?, 'ADMIN', ?, ?, ?, ?)";
@@ -347,7 +369,6 @@ public class EmployeeManager {
         } catch (Exception e) { return "Lỗi: " + e.getMessage(); }
     }
 
-    // ĐÃ SỬA: Đăng ký Nhân viên (Thêm Email, Số điện thoại)
     public String registerEmployee(String username, String password, String fullName, String companyCode, String email, String phone) {
         String findBossSql = "SELECT username FROM users WHERE company_code = ? AND role = 'ADMIN'";
         String checkUserSql = "SELECT username, email, phone FROM users WHERE username = ? OR email = ? OR phone = ?";
@@ -419,7 +440,6 @@ public class EmployeeManager {
         } catch (Exception e) {}
     }
 
-    // ĐÃ THÊM: Tính năng Reset Mật Khẩu (Quên mật khẩu)
     public boolean resetPassword(String username, String email, String newPassword) {
         String sqlCheck = "SELECT 1 FROM users WHERE username = ? AND email = ?";
         String sqlUpdate = "UPDATE users SET password = ? WHERE username = ?";
@@ -474,15 +494,19 @@ public class EmployeeManager {
     }
 
     public Employee getCurrentEmployeeProfile() {
-        String sql = "SELECT * FROM employees WHERE login_username = ?";
+        String sql = "SELECT id FROM employees WHERE login_username = ?";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, currentUsername);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                return new Employee(rs.getString("id"), rs.getString("name"), rs.getString("department"), rs.getString("position"), rs.getDouble("baseSalary"));
+                String empId = rs.getString("id");
+                return getEmployeeProfile(empId);
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.out.println("Lỗi khi tải hồ sơ đăng nhập: " + e.getMessage());
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -526,19 +550,33 @@ public class EmployeeManager {
         return null;
     }
 
+    // ĐÃ SỬA: Thêm hiển thị lỗi chi tiết khi lưu lịch
     public void saveSchedule(String empId, LocalDate date, String shift) {
         String sql = "INSERT INTO schedules (employee_id, work_date, shift) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE shift = VALUES(shift)";
         try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, empId); pstmt.setDate(2, java.sql.Date.valueOf(date)); pstmt.setString(3, shift); pstmt.executeUpdate();
-        } catch (Exception e) {}
+            pstmt.setString(1, empId); 
+            pstmt.setDate(2, java.sql.Date.valueOf(date)); 
+            pstmt.setString(3, shift); 
+            pstmt.executeUpdate();
+            System.out.println("✅ Đã lưu lịch làm việc cho: " + empId + " ngày " + date);
+        } catch (Exception e) {
+            System.out.println("❌ LỖI KHI LƯU LỊCH LÀM VIỆC: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
+    // ĐÃ SỬA: Thêm hiển thị lỗi chi tiết khi lấy lịch
     public String getSchedule(String empId, LocalDate date) {
         String sql = "SELECT shift FROM schedules WHERE employee_id = ? AND work_date = ?";
         try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, empId); pstmt.setDate(2, java.sql.Date.valueOf(date)); ResultSet rs = pstmt.executeQuery();
+            pstmt.setString(1, empId); 
+            pstmt.setDate(2, java.sql.Date.valueOf(date)); 
+            ResultSet rs = pstmt.executeQuery();
             if (rs.next()) return rs.getString("shift");
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.out.println("❌ LỖI KHI TÌM LỊCH LÀM VIỆC: " + e.getMessage());
+            e.printStackTrace();
+        }
         return "Chưa đăng ký";
     }
 
@@ -572,5 +610,67 @@ public class EmployeeManager {
             }
         }
         return report;
+    }
+
+    // =========================================================
+    // 11. HỒ SƠ NHÂN VIÊN (Bao gồm cập nhật lần đầu)
+    // =========================================================
+    public Employee getEmployeeProfile(String id) {
+        Employee emp = null;
+        String sql = "SELECT * FROM employees WHERE id = ?"; 
+        try (Connection conn = DatabaseHelper.getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                emp = new Employee();
+                emp.setId(rs.getString("id"));
+                emp.setName(rs.getString("name"));
+                emp.setDepartment(rs.getString("department"));
+                emp.setPosition(rs.getString("position"));
+                emp.setBaseSalary(rs.getDouble("baseSalary")); 
+
+                java.sql.Date sqlNgaySinh = rs.getDate("ngay_sinh");
+                if (sqlNgaySinh != null) emp.setNgaySinh(sqlNgaySinh.toLocalDate()); 
+
+                java.sql.Date sqlNgayVaoLam = rs.getDate("ngay_vao_lam");
+                if (sqlNgayVaoLam != null) emp.setNgayVaoLam(sqlNgayVaoLam.toLocalDate());
+
+                emp.setGiaDinh(rs.getString("gia_dinh"));
+                emp.setLienLacKhan(rs.getString("lien_lac_khan"));
+            }
+        } catch (Exception e) {
+            System.out.println("Lỗi khi lấy hồ sơ nhân viên: " + e.getMessage());
+            e.printStackTrace(); 
+        }
+        return emp; 
+    }
+
+    public boolean updateFirstTimeProfile(String id, LocalDate dob, String relationship, String emergencyPhone) {
+        String sql = "UPDATE employees SET ngay_sinh = ?, gia_dinh = ?, lien_lac_khan = ? WHERE id = ?";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDate(1, java.sql.Date.valueOf(dob)); 
+            pstmt.setString(2, relationship);
+            pstmt.setString(3, emergencyPhone);
+            pstmt.setString(4, id); 
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("✅ Đã cập nhật thành công hồ sơ cho ID: " + id);
+                return true;
+            } else {
+                System.out.println("⚠️ Không tìm thấy ID nhân viên này trong CSDL: " + id);
+                return false;
+            }
+        } catch (SQLException sqlException) {
+            System.out.println("=== ❌ LỖI CƠ SỞ DỮ LIỆU ===");
+            System.out.println("Chi tiết lỗi: " + sqlException.getMessage());
+            sqlException.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            System.out.println("=== ❌ LỖI HỆ THỐNG JAVA ===");
+            e.printStackTrace();
+            return false;
+        }
     }
 }

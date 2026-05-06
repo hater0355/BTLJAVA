@@ -18,8 +18,8 @@ public class LoginUI extends JFrame {
     private final Color COLOR_REGISTER = new Color(16, 185, 129);  
 
     public LoginUI() {
-        setTitle("Hệ Thống Quản Lý Lương & Nhân Sự");
-        setSize(450, 750); // Mở rộng chiều cao để chứa thêm form
+        setTitle("Hệ Thống Quản Lý Công Ty - Đăng Nhập");
+        setSize(450, 750); 
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
@@ -80,7 +80,6 @@ public class LoginUI extends JFrame {
         chkRemember.setFont(new Font("Tahoma", Font.PLAIN, 12));
         chkRemember.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // ĐÃ THÊM: Nút bấm QUÊN MẬT KHẨU
         JLabel lblForgot = new JLabel("Quên mật khẩu?", SwingConstants.RIGHT);
         lblForgot.setBounds(200, 255, 160, 20);
         lblForgot.setFont(new Font("Tahoma", Font.ITALIC, 12));
@@ -124,7 +123,10 @@ public class LoginUI extends JFrame {
                 if (chkRemember.isSelected()) { prefs.put("savedUser", u); prefs.put("savedPass", p); } 
                 else { prefs.remove("savedUser"); prefs.remove("savedPass"); }
 
-                if (role.equals("ADMIN")) { new DashboardUI(); dispose(); } 
+                if (role.equals("ADMIN")) { 
+                    new DashboardUI(); 
+                    dispose(); 
+                } 
                 else {
                     if (p.equals("123")) {
                         JPasswordField pf = new JPasswordField();
@@ -136,7 +138,29 @@ public class LoginUI extends JFrame {
                             JOptionPane.showMessageDialog(this, "✅ Đổi mật khẩu thành công!");
                         } else { EmployeeManager.getInstance().logoutUser(); return; }
                     }
-                    new EmployeeDashboardUI(); dispose(); 
+                    
+                    // ========================================================
+                    // TRẠM KIỂM SOÁT HỒ SƠ LẦN ĐẦU ĐĂNG NHẬP (ĐÃ NÂNG CẤP AN TOÀN)
+                    // ========================================================
+                    Employee myProfile = EmployeeManager.getInstance().getCurrentEmployeeProfile();
+                    
+                    // Chốt chặn an toàn: Báo lỗi nếu mất kết nối CSDL đột ngột
+                    if (myProfile == null) {
+                        JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu hồ sơ! Vui lòng thử đăng nhập lại.", "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+                        EmployeeManager.getInstance().logoutUser();
+                        return;
+                    }
+                    
+                    // Nếu chưa có số điện thoại khẩn cấp -> Bắt buộc điền
+                    if (myProfile.getLienLacKhan() == null || myProfile.getLienLacKhan().trim().isEmpty()) {
+                        new FirstLoginSetupUI(myProfile.getId());
+                        dispose(); 
+                    } else {
+                        // Nếu đã điền rồi -> Vào thẳng giao diện làm việc
+                        new EmployeeDashboardUI(); 
+                        dispose(); 
+                    }
+                    // ========================================================
                 }
             } else { JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!", "Lỗi", JOptionPane.ERROR_MESSAGE); }
         });
@@ -146,7 +170,6 @@ public class LoginUI extends JFrame {
         return panel;
     }
 
-    // ĐÃ THÊM: Hộp thoại nhập Email để khôi phục mật khẩu
     private void showForgotPasswordDialog() {
         JTextField txtUser = new JTextField();
         JTextField txtEmail = new JTextField();
@@ -170,9 +193,6 @@ public class LoginUI extends JFrame {
         }
     }
 
-    // ==========================================
-    // 2. MÀN HÌNH ĐĂNG KÝ
-    // ==========================================
     private JPanel createRegisterCard() {
         JPanel panel = new JPanel(null);
         panel.setBackground(BG_COLOR);
@@ -195,7 +215,7 @@ public class LoginUI extends JFrame {
         RoundedTextField txtUser = new RoundedTextField();
         txtUser.setBounds(60, y, 300, 35); txtUser.setBackground(Color.WHITE); y += 40;
         
-        JLabel lblFullName = new JLabel("Họ và Tên:"); // ĐÃ MỞ CHO CẢ SẾP
+        JLabel lblFullName = new JLabel("Họ và Tên:"); 
         lblFullName.setForeground(TEXT_SECONDARY); lblFullName.setFont(new Font("Tahoma", Font.BOLD, 12));
         lblFullName.setBounds(60, y, 300, 20); y += 20;
         RoundedTextField txtFullName = new RoundedTextField();

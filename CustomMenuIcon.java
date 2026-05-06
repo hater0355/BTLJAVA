@@ -25,6 +25,24 @@ public class CustomMenuIcon implements Icon {
         else if (type == 6) { g2d.fillOval(cx-6, cy-8, 6, 6); g2d.fillArc(cx-10, cy+1, 14, 12, 0, 180); g2d.setColor(new Color(16, 185, 129)); g2d.setStroke(new BasicStroke(2)); g2d.drawLine(cx+2, cy+2, cx+5, cy+6); g2d.drawLine(cx+5, cy+6, cx+10, cy-2); } 
         else if (type == 7) { g2d.fillPolygon(new int[]{cx-4, cx, cx+4, cx+4, cx, cx-4}, new int[]{cy-3, cy-6, cy-6, cy+6, cy+6, cy+3}, 6); g2d.fillArc(cx+2, cy-3, 6, 6, -90, 180); g2d.fillRect(cx-6, cy-2, 2, 4); }
         else if (type == 8) { g2d.setStroke(new BasicStroke(2)); g2d.drawRoundRect(cx-7, cy-6, 14, 14, 3, 3); g2d.drawLine(cx-7, cy-1, cx+7, cy-1); g2d.drawLine(cx-3, cy-8, cx-3, cy-4); g2d.drawLine(cx+3, cy-8, cx+3, cy-4); }
+        else if (type == 9) { 
+            g2d.setStroke(new BasicStroke(2)); // Chỉnh độ dày của nét vẽ
+            g2d.drawLine(cx - 5, cy - 8, cx - 5, cy + 8); // Cạnh dọc của cửa
+            g2d.drawLine(cx - 5, cy - 8, cx - 1, cy - 8); // Cạnh ngang trên
+            g2d.drawLine(cx - 5, cy + 8, cx - 1, cy + 8); // Cạnh ngang dưới
+            g2d.drawLine(cx - 2, cy, cx + 7, cy); // Thân mũi tên
+            g2d.drawLine(cx + 4, cy - 3, cx + 7, cy); // Đầu mũi tên (nét trên)
+            g2d.drawLine(cx + 4, cy + 3, cx + 7, cy); // Đầu mũi tên (nét dưới)
+        }
+        else if (type == 10) { 
+            g2d.fillRect(cx - 7, cy - 8, 14, 18); // Khung tòa nhà
+            g2d.setColor(c.getBackground()); // Lấy màu nền để vẽ các ô cửa sổ (tạo khoảng trống)
+            g2d.fillRect(cx - 2, cy + 4, 4, 6); 
+            g2d.fillRect(cx - 4, cy - 5, 2, 2); 
+            g2d.fillRect(cx + 2, cy - 5, 2, 2);
+            g2d.fillRect(cx - 4, cy - 1, 2, 2); 
+            g2d.fillRect(cx + 2, cy - 1, 2, 2);
+        }
         g2d.dispose();
     }
     @Override public int getIconWidth() { return width; }
