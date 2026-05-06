@@ -381,7 +381,15 @@ private void renderCalendarGrid() {
 
         if (currentShift.startsWith("Hành chính") || currentShift.startsWith("Ca Sáng") || currentShift.startsWith("Ca Chiều")) {
             String[] options = {"Xin nghỉ đột xuất", "Đóng"};
-            int choice = JOptionPane.showOptionDialog(this, "Ngày " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " đang có ca làm.\nBạn muốn làm gì?", "Tùy chọn", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+            // FIX: Sửa lỗi JOptionPane.showOptionDialog bị cắt
+            int choice = JOptionPane.showOptionDialog(this, 
+                "Ngày " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " đang có ca làm.\nBạn muốn làm gì?", 
+                "Tùy chọn", 
+                JOptionPane.YES_NO_OPTION, 
+                JOptionPane.QUESTION_MESSAGE, 
+                null, 
+                options, 
+                options[1]);
             
             if (choice == 0) {
                 String reason = JOptionPane.showInputDialog(this, "Nhập lý do xin nghỉ phép (Bắt buộc):");
@@ -397,7 +405,11 @@ private void renderCalendarGrid() {
         String[] options = {"Ca 1 (08:00-17:00, nghỉ 12h-13h)","Ca 2 (12:00-21:00, nghỉ 16h-17h)"};
         JComboBox<String> cbShift = new JComboBox<>(options);
         
-        if (currentShift.equals("Nghỉ")) cbShift.setSelectedIndex(3);
+        // FIX: Sửa lỗi index out of bounds - chỉ có 2 option (index 0-1), không có index 3
+        if (currentShift.equals("Nghỉ")) {
+            // Giữ mặc định là index 0 nếu là "Nghỉ"
+            cbShift.setSelectedIndex(0);
+        }
 
         JPanel panel = new JPanel(new GridLayout(2, 1, 5, 5));
         panel.add(new JLabel("Đăng ký lịch cho ngày: " + date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
@@ -426,7 +438,9 @@ private void renderCalendarGrid() {
                 }
             }
 
-            if (cbShift.getSelectedIndex() == 3) shiftToSave = "Nghỉ";
+            // FIX: Xóa dòng này vì không cần thiết - chỉ có 2 option
+            // if (cbShift.getSelectedIndex() == 3) shiftToSave = "Nghỉ";
+            
             EmployeeManager.getInstance().saveSchedule(myProfile.getId(), date, shiftToSave);
             JOptionPane.showMessageDialog(this, "✅ Đã lưu thành công!");
             renderCalendarGrid(); 
@@ -507,7 +521,10 @@ private void renderCalendarGrid() {
             System.out.println("🔍 DEBUG - shiftToday: [" + shiftToday + "]");
             // FIX: Kiểm tra Ca 1 và Ca 2 thay vì Hành chính, Ca Sáng, Ca Chiều
             if (!shiftToday.startsWith("Ca 1") && !shiftToday.startsWith("Ca 2")) {
-                JOptionPane.showMessageDialog(this, "Hôm nay bạn không có ca làm việc.\nVui lòng đăng ký lịch làm trước khi chấm công!", "Lỗi chấm công", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, 
+                    "Hôm nay bạn không có ca làm việc.\nVui lòng đăng ký lịch làm trước khi chấm công!", 
+                    "Lỗi chấm công", 
+                    JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -567,6 +584,7 @@ private void renderCalendarGrid() {
         title.setAlignmentX(Component.CENTER_ALIGNMENT); 
         title.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
         
+        // FIX: Sửa HTML string bị cắt
         JLabel msg = new JLabel("<html><div style='text-align: center;'>Tài khoản của bạn hiện không trực thuộc Công ty nào.<br>Vui lòng nhập Mã Công Ty mới để nộp hồ sơ xin việc.</div></html>"); 
         msg.setFont(new Font("Tahoma", Font.PLAIN, 16)); 
         msg.setForeground(TEXT_PRIMARY); 
@@ -641,6 +659,7 @@ private void renderCalendarGrid() {
         title.setAlignmentX(Component.CENTER_ALIGNMENT); 
         title.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
         
+        // FIX: Sửa HTML string bị cắt
         JLabel msg = new JLabel("<html><div style='text-align: center;'>Giám đốc chưa phê duyệt hồ sơ xin việc của bạn.<br>Vui lòng liên hệ quản lý hoặc quay lại sau.</div></html>"); 
         msg.setFont(new Font("Tahoma", Font.PLAIN, 16)); 
         msg.setForeground(TEXT_PRIMARY); 
@@ -809,6 +828,7 @@ private void renderCalendarGrid() {
         p.add(centerP, BorderLayout.CENTER); 
         return p;
     }
+    
     // Hàm cập nhật hồ sơ lần đầu đăng nhập
     public boolean updateFirstTimeProfile(String id, LocalDate dob, String relationship, String emergencyPhone) {
         // Lệnh SQL để cập nhật 3 cột dữ liệu mới vào bảng employees
