@@ -32,8 +32,8 @@ public class DatePickerDialog extends JDialog {
         JPanel header = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         header.setBackground(Color.WHITE);
 
-        JButton btnPrev = new JButton("◀");
-        JButton btnNext = new JButton("▶");
+        JButton btnPrev = new JButton("<");
+        JButton btnNext = new JButton(">");
         btnPrev.setFocusPainted(false); btnPrev.setBackground(Color.WHITE); btnPrev.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnNext.setFocusPainted(false); btnNext.setBackground(Color.WHITE); btnNext.setCursor(new Cursor(Cursor.HAND_CURSOR));
 

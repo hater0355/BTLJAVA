@@ -18,7 +18,7 @@ public class FirstLoginSetupUI extends JFrame {
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // Bắt buộc phải điền, không cho tắt
         setResizable(false);
 
-        JPanel p = new JPanel(new GridLayout(4, 2, 10, 20));
+        JPanel p = new JPanel(new GridLayout(5, 2, 10, 15)); // Tăng lên 5 dòng
         p.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
 
         // --- DÒNG 1: NGÀY SINH ---
@@ -60,7 +60,12 @@ public class FirstLoginSetupUI extends JFrame {
         JTextField txtEmergency = new JTextField();
         txtEmergency.setFont(new Font("Tahoma", Font.PLAIN, 14));
 
-        // --- DÒNG 4: NÚT LƯU ---
+        // --- DÒNG 4: SỐ NGƯỜI PHỤ THUỘC ---
+        JLabel lblDependents = new JLabel("Số người phụ thuộc:");
+        JTextField txtDependents = new JTextField("0"); // Mặc định là 0
+        txtDependents.setFont(new Font("Tahoma", Font.PLAIN, 14));
+
+        // --- DÒNG 5: NÚT LƯU ---
         JButton btnSave = new JButton("Lưu và Truy cập");
         btnSave.setBackground(new Color(16, 185, 129));
         btnSave.setForeground(Color.WHITE);
@@ -70,6 +75,7 @@ public class FirstLoginSetupUI extends JFrame {
         p.add(lblDob); p.add(pnlDob);
         p.add(lblRelationship); p.add(cbRelationship); // Gắn JComboBox vào form
         p.add(lblEmergency); p.add(txtEmergency);
+        p.add(lblDependents); p.add(txtDependents);
         p.add(new JLabel("")); // Ô trống để căn chỉnh nút bấm sang phải
         p.add(btnSave);
 
@@ -79,9 +85,19 @@ public class FirstLoginSetupUI extends JFrame {
             // Lấy giá trị chữ đang được chọn trong JComboBox
             String relationship = cbRelationship.getSelectedItem().toString(); 
             String emergency = txtEmergency.getText().trim();
+            String depStr = txtDependents.getText().trim();
 
             if (dobStr.isEmpty() || emergency.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn ngày sinh và điền Số điện thoại!");
+                return;
+            }
+            
+            int dependents = 0;
+            try {
+                dependents = Integer.parseInt(depStr);
+                if (dependents < 0) throw new NumberFormatException();
+            } catch (NumberFormatException nfe) {
+                JOptionPane.showMessageDialog(this, "Số người phụ thuộc phải là số nguyên (>= 0)!", "Lỗi nhập liệu", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -90,7 +106,7 @@ public class FirstLoginSetupUI extends JFrame {
                 LocalDate dob = LocalDate.parse(dobStr, formatter);
 
                 // GỌI HÀM LƯU DATABASE THỰC SỰ (Đã bỏ dấu //)
-                boolean isSuccess = EmployeeManager.getInstance().updateFirstTimeProfile(employeeId, dob, relationship, emergency);
+                boolean isSuccess = EmployeeManager.getInstance().updateFirstTimeProfile(employeeId, dob, relationship, emergency, dependents);
 
                 if (isSuccess) {
                     JOptionPane.showMessageDialog(this, "Cập nhật thành công! Chào mừng bạn đến với Công ty.");

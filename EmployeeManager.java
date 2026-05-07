@@ -50,6 +50,7 @@ public class EmployeeManager {
                         rs.getString("position"),
                         rs.getDouble("baseSalary")
                     );
+                    try { emp.setNguoiPhuThuoc(rs.getInt("nguoi_phu_thuoc")); } catch (Exception ignored) {} // Bỏ qua lỗi nếu DB chưa cập nhật cột
                     list.add(emp);
                 }
             }
@@ -57,6 +58,51 @@ public class EmployeeManager {
             System.err.println("❌ Lỗi khi lấy danh sách: " + e.getMessage());
         }
         return list;
+    }
+
+    // ĐÃ THÊM: Lấy danh sách đồng nghiệp cùng phòng ban (ẩn lương)
+    public List<Employee> getColleagues(String department, String adminUsername) {
+        List<Employee> list = new ArrayList<>();
+        String sql = "SELECT * FROM employees WHERE account_username = ? AND department = ? AND status = 'APPROVED'";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminUsername);
+            pstmt.setString(2, department);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Employee emp = new Employee();
+                    emp.setId(rs.getString("id"));
+                    emp.setName(rs.getString("name"));
+                    emp.setDepartment(rs.getString("department"));
+                    emp.setPosition(rs.getString("position"));
+                    // Cố tình bỏ qua baseSalary để bảo mật thông tin lương thưởng
+                    java.sql.Date sqlNgaySinh = rs.getDate("ngay_sinh");
+                    if (sqlNgaySinh != null) emp.setNgaySinh(sqlNgaySinh.toLocalDate()); 
+                    java.sql.Date sqlNgayVaoLam = rs.getDate("ngay_vao_lam");
+                    if (sqlNgayVaoLam != null) emp.setNgayVaoLam(sqlNgayVaoLam.toLocalDate());
+                    emp.setGiaDinh(rs.getString("gia_dinh"));
+                    emp.setLienLacKhan(rs.getString("lien_lac_khan"));
+                    list.add(emp);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    // ĐÃ THÊM: Lấy danh sách nhân viên có sinh nhật hôm nay trong toàn công ty
+    public List<String> getCompanyBirthdaysToday(String adminUsername) {
+        List<String> birthdayNames = new ArrayList<>();
+        String sql = "SELECT name FROM employees WHERE account_username = ? AND status = 'APPROVED' AND MONTH(ngay_sinh) = MONTH(CURRENT_DATE()) AND DAY(ngay_sinh) = DAY(CURRENT_DATE())";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminUsername);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    birthdayNames.add(rs.getString("name"));
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return birthdayNames;
     }
 
     // =========================================================
@@ -84,16 +130,17 @@ public class EmployeeManager {
     }
 
     // =========================================================
-    // 3. CẬP NHẬT LƯƠNG NHÂN VIÊN
+    // 3. CẬP NHẬT LƯƠNG VÀ NGƯỜI PHỤ THUỘC NHÂN VIÊN
     // =========================================================
-    public void updateSalary(String id, double newSalary) {
-        String sql = "UPDATE employees SET baseSalary = ? WHERE id = ? AND account_username = ?";
+    public void updateSalaryAndDependents(String id, double newSalary, int dependents) {
+        String sql = "UPDATE employees SET baseSalary = ?, nguoi_phu_thuoc = ? WHERE id = ? AND account_username = ?";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
              
             pstmt.setDouble(1, newSalary);
-            pstmt.setString(2, id);
-            pstmt.setString(3, currentUsername); 
+            pstmt.setInt(2, dependents);
+            pstmt.setString(3, id);
+            pstmt.setString(4, currentUsername); 
             pstmt.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
@@ -141,11 +188,15 @@ public class EmployeeManager {
         String newId;
         boolean exists = true;
         Random rand = new Random();
+        int attempts = 0;
         
         do {
             String randomSuffix = String.format("%03d", rand.nextInt(999) + 1);
             newId = prefix + randomSuffix;
             exists = checkIdExists(newId);
+            attempts++;
+            // FIX: Tránh treo hệ thống nếu công ty có hơn 1000 nhân viên, tự động mở rộng đuôi lên 4 số
+            if (attempts > 900) { newId = prefix + String.format("%04d", rand.nextInt(9999) + 1); exists = checkIdExists(newId); }
         } while (exists);
         
         return newId;
@@ -163,20 +214,74 @@ public class EmployeeManager {
         } 
     }
 
-    public void importEmployeeFromExcel(String name, String dep, String pos, double salary) {
+    public boolean importEmployeeFromExcel(String name, String dep, String pos, double salary, String email, String phone, String address, String dobStr) {
+        // Kiểm tra xem nhân viên đã tồn tại chưa (trùng Tên, Phòng ban và Chức vụ do Sếp hiện tại quản lý)
+        String checkSql = "SELECT 1 FROM employees WHERE name = ? AND department = ? AND position = ? AND account_username = ?";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(checkSql)) {
+            pstmt.setString(1, name);
+            pstmt.setString(2, dep);
+            pstmt.setString(3, pos);
+            pstmt.setString(4, currentUsername);
+            if (pstmt.executeQuery().next()) {
+                return false; // Đã tồn tại -> Trả về false để bỏ qua
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         String empId = generateEmployeeId();
         
-        String insertUserSql = "INSERT INTO users (username, password, role) VALUES (?, '123', 'EMPLOYEE')";
+        String insertUserSql = "INSERT INTO users (username, password, role, full_name, email, phone) VALUES (?, '123', 'EMPLOYEE', ?, ?, ?)";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(insertUserSql)) {
             pstmt.setString(1, empId);
+            pstmt.setString(2, name);
+            pstmt.setString(3, email.isEmpty() ? null : email);
+            pstmt.setString(4, phone.isEmpty() ? null : phone);
             pstmt.executeUpdate();
         } catch(Exception e) {
             e.printStackTrace();
         }
 
+        LocalDate dob = null;
+        if (dobStr != null && !dobStr.isEmpty()) {
+            try {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("d/M/yyyy");
+                if (dobStr.contains("-")) fmt = DateTimeFormatter.ofPattern("d-M-yyyy");
+                dob = LocalDate.parse(dobStr, fmt);
+            } catch (Exception ex) {}
+        }
+        
         Employee newEmp = new Employee(empId, name, dep, pos, salary);
-        addEmployee(newEmp);
+        if (dob != null) newEmp.setNgaySinh(dob);
+        newEmp.setGiaDinh(address.isEmpty() ? null : address);
+        newEmp.setLienLacKhan(phone.isEmpty() ? null : phone);
+        
+        addEmployeeFull(newEmp); // Sử dụng hàm thêm mới có đầy đủ các trường
+        return true;
+    }
+
+    // Hàm lưu vào CSDL với đầy đủ thông tin thêm từ Excel
+    private void addEmployeeFull(Employee emp) {
+        String sql = "INSERT INTO employees (id, name, department, position, baseSalary, account_username, login_username, status, ngay_sinh, gia_dinh, lien_lac_khan) VALUES (?, ?, ?, ?, ?, ?, ?, 'APPROVED', ?, ?, ?)";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, emp.getId());
+            pstmt.setString(2, emp.getName());
+            pstmt.setString(3, emp.getDepartment());
+            pstmt.setString(4, emp.getPosition());
+            pstmt.setDouble(5, emp.getBaseSalary());
+            pstmt.setString(6, currentUsername);
+            pstmt.setString(7, emp.getId());
+            if (emp.getNgaySinh() != null) pstmt.setDate(8, java.sql.Date.valueOf(emp.getNgaySinh()));
+            else pstmt.setNull(8, java.sql.Types.DATE);
+            pstmt.setString(9, emp.getGiaDinh());
+            pstmt.setString(10, emp.getLienLacKhan());
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi khi thêm nhân viên từ Excel: " + e.getMessage());
+        }
     }
 
     // =========================================================
@@ -277,11 +382,13 @@ public class EmployeeManager {
     }
 
     // ĐÃ THÊM: Tính toán số tiền phạt đi muộn > 5 phút và tan ca sớm (ko đủ 8h)
-    public double getAttendancePenalty(String empId, int month, int year, double dailyRate) {
+    public double[] getAttendancePenalty(String empId, int month, int year, double dailyRate) {
         double penalty = 0;
+        int forgotCount = 0;
+        long totalWorkedMinutes = 0;
         double hourlyRate = dailyRate / 8.0; // Quy đổi lương 1 ngày ra lương 1 giờ (Mặc định 8 tiếng)
         
-        String sql = "SELECT t.check_in, t.check_out, s.shift FROM timekeeping t " +
+        String sql = "SELECT t.work_date, t.check_in, t.check_out, s.shift FROM timekeeping t " +
                      "JOIN schedules s ON t.employee_id = s.employee_id AND t.work_date = s.work_date " +
                      "WHERE t.employee_id = ? AND MONTH(t.work_date) = ? AND YEAR(t.work_date) = ?";
                      
@@ -292,6 +399,7 @@ public class EmployeeManager {
             
             while (rs.next()) {
                 Time sqlIn = rs.getTime("check_in"); Time sqlOut = rs.getTime("check_out"); String shift = rs.getString("shift");
+                LocalDate workDate = rs.getDate("work_date").toLocalDate();
                 if (sqlIn == null) continue;
                 
                 LocalTime inTime = sqlIn.toLocalTime();
@@ -304,17 +412,30 @@ public class EmployeeManager {
                     if (lateMinutes > 5) penalty += (lateMinutes / 60.0) * hourlyRate; // Phạt số tiền tương ứng số phút đi muộn
                 }
                 
-                if (sqlOut != null) {
+                if (sqlOut == null) {
+                    if (workDate.isBefore(LocalDate.now())) {
+                        penalty += 200000; // Phạt 200,000 VNĐ do quên Check-out và ngày đã qua
+                        forgotCount++;
+                    }
+                } else {
                     LocalTime outTime = sqlOut.toLocalTime();
-                    long workedMinutes = java.time.Duration.between(inTime, outTime).toMinutes();
-                    if (workedMinutes > 0 && workedMinutes < 480) { // Không đủ 8 tiếng (480 phút)
-                        long missingMinutes = 480 - workedMinutes;
-                        penalty += (missingMinutes / 60.0) * hourlyRate; // Phạt số tiền tương ứng số phút làm thiếu
+                    if (outTime.equals(LocalTime.of(23, 59, 0))) {
+                        penalty += 200000; // Phạt 200,000 VNĐ do quên Check-out (trường hợp bị hệ thống tự động chốt 23:59)
+                        forgotCount++;
+                    } else {
+                        long workedMinutes = java.time.Duration.between(inTime, outTime).toMinutes();
+                        if (workedMinutes > 0) {
+                            if (workedMinutes < 480) { // Không đủ 8 tiếng (480 phút)
+                                long missingMinutes = 480 - workedMinutes;
+                                penalty += (missingMinutes / 60.0) * hourlyRate; // Phạt số tiền tương ứng số phút làm thiếu
+                            }
+                            totalWorkedMinutes += workedMinutes;
+                        }
                     }
                 }
             }
         } catch (Exception e) { System.out.println("❌ LỖI TÍNH TIỀN PHẠT: " + e.getMessage()); }
-        return penalty;
+        return new double[]{penalty, forgotCount, totalWorkedMinutes};
     }
 
     public void saveAttendance(String empId, LocalDate date, boolean isPresent) {}
@@ -344,6 +465,50 @@ public class EmployeeManager {
             pstmt.setString(1, name);
             pstmt.setString(2, currentUsername);
             pstmt.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ĐÃ THÊM: Hàm sửa tên phòng ban đồng bộ
+    public void updateDepartmentName(String oldName, String newName) {
+        String sqlDept = "UPDATE departments SET name = ? WHERE name = ? AND account_username = ?";
+        String sqlEmp = "UPDATE employees SET department = ? WHERE department = ? AND account_username = ?";
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            conn.setAutoCommit(false); // Bắt đầu Transaction
+            try (PreparedStatement pstmtDept = conn.prepareStatement(sqlDept);
+                 PreparedStatement pstmtEmp = conn.prepareStatement(sqlEmp)) {
+                 
+                pstmtDept.setString(1, newName); pstmtDept.setString(2, oldName); pstmtDept.setString(3, currentUsername);
+                pstmtDept.executeUpdate();
+
+                pstmtEmp.setString(1, newName); pstmtEmp.setString(2, oldName); pstmtEmp.setString(3, currentUsername);
+                pstmtEmp.executeUpdate();
+
+                conn.commit(); // Hoàn tất nếu không có lỗi
+            } catch (Exception ex) { conn.rollback(); ex.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ĐÃ THÊM: Hàm xóa phòng ban và chuyển nhân viên về nhóm "Chung"
+    public void deleteDepartment(String deptName) {
+        String sqlDept = "DELETE FROM departments WHERE name = ? AND account_username = ?";
+        String sqlEmp = "UPDATE employees SET department = 'Chung' WHERE department = ? AND account_username = ?";
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            conn.setAutoCommit(false); // Bắt đầu Transaction
+            try (PreparedStatement pstmtDept = conn.prepareStatement(sqlDept);
+                 PreparedStatement pstmtEmp = conn.prepareStatement(sqlEmp)) {
+                 
+                pstmtDept.setString(1, deptName); pstmtDept.setString(2, currentUsername);
+                pstmtDept.executeUpdate();
+
+                pstmtEmp.setString(1, deptName); pstmtEmp.setString(2, currentUsername);
+                pstmtEmp.executeUpdate();
+
+                conn.commit(); // Hoàn tất nếu không có lỗi
+            } catch (Exception ex) { conn.rollback(); ex.printStackTrace(); }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -701,6 +866,26 @@ public class EmployeeManager {
         }
     }
 
+    // ĐÃ THÊM: Duyệt TẤT CẢ đơn nghỉ phép đang chờ của 1 nhân viên
+    public int reviewAllPendingLeaves(String empId, boolean isApproved) {
+        int count = 0;
+        String sql = "SELECT work_date, shift FROM schedules WHERE employee_id = ? AND (shift LIKE 'Chờ duyệt nghỉ:%' OR shift LIKE 'Xin nghỉ:%')";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, empId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                LocalDate date = rs.getDate("work_date").toLocalDate();
+                String shift = rs.getString("shift");
+                String reason = shift.replace("Chờ duyệt nghỉ: ", "").replace("Xin nghỉ: ", "");
+                String newShift = isApproved ? "Đã duyệt nghỉ: " + reason : "Từ chối nghỉ: " + reason;
+                saveSchedule(empId, date, newShift);
+                count++;
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return count;
+    }
+
     public List<String[]> getDailyAbsenceReport(LocalDate date) {
         List<String[]> report = new ArrayList<>();
         List<Employee> emps = getAllEmployees();
@@ -738,6 +923,7 @@ public class EmployeeManager {
                 emp.setDepartment(rs.getString("department"));
                 emp.setPosition(rs.getString("position"));
                 emp.setBaseSalary(rs.getDouble("baseSalary")); 
+                try { emp.setNguoiPhuThuoc(rs.getInt("nguoi_phu_thuoc")); } catch (Exception ignored) {}
 
                 java.sql.Date sqlNgaySinh = rs.getDate("ngay_sinh");
                 if (sqlNgaySinh != null) emp.setNgaySinh(sqlNgaySinh.toLocalDate()); 
@@ -755,14 +941,34 @@ public class EmployeeManager {
         return emp; 
     }
 
-    public boolean updateFirstTimeProfile(String id, LocalDate dob, String relationship, String emergencyPhone) {
-        String sql = "UPDATE employees SET ngay_sinh = ?, gia_dinh = ?, lien_lac_khan = ? WHERE id = ?";
+    // ĐÃ THÊM: Hàm lấy Email và Số điện thoại liên hệ từ bảng users để đồng nghiệp trao đổi công việc
+    public String[] getEmployeeContactInfo(String empId) {
+        String sql = "SELECT u.email, u.phone FROM users u JOIN employees e ON u.username = e.login_username WHERE e.id = ?";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, empId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String email = rs.getString("email");
+                String phone = rs.getString("phone");
+                return new String[]{
+                    (email != null && !email.isEmpty()) ? email : "Chưa cập nhật",
+                    (phone != null && !phone.isEmpty()) ? phone : "Chưa cập nhật"
+                };
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return new String[]{"Chưa cập nhật", "Chưa cập nhật"};
+    }
+
+    public boolean updateFirstTimeProfile(String id, LocalDate dob, String relationship, String emergencyPhone, int dependents) {
+        String sql = "UPDATE employees SET ngay_sinh = ?, gia_dinh = ?, lien_lac_khan = ?, nguoi_phu_thuoc = ? WHERE id = ?";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setDate(1, java.sql.Date.valueOf(dob)); 
             pstmt.setString(2, relationship);
             pstmt.setString(3, emergencyPhone);
-            pstmt.setString(4, id); 
+            pstmt.setInt(4, dependents);
+            pstmt.setString(5, id); 
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
                 System.out.println("✅ Đã cập nhật thành công hồ sơ cho ID: " + id);
@@ -791,6 +997,59 @@ public class EmployeeManager {
             pstmt.setString(2, adminUsername);
             pstmt.setString(3, originalMessage);
             pstmt.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    // ĐÃ THÊM: Xóa công việc khỏi lịch sử
+    public void deleteTask(String exactMessage, String adminUsername) {
+        String sql = "DELETE FROM notifications WHERE account_username = ? AND message = ?";
+        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminUsername);
+            pstmt.setString(2, exactMessage);
+            pstmt.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    // =========================================================
+    // 12. QUẢN LÝ THƯỞNG PHẠT (DÀNH CHO TRƯỞNG PHÒNG)
+    // =========================================================
+    public void saveRewardPenalty(String empId, int month, int year, double amount, String reason, String recordedBy) {
+        String sql = "INSERT INTO rewards_penalties (employee_id, month, year, amount, reason, recorded_by) VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, empId); pstmt.setInt(2, month); pstmt.setInt(3, year);
+            pstmt.setDouble(4, amount); pstmt.setString(5, reason); pstmt.setString(6, recordedBy);
+            pstmt.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    public double getTotalRewardPenalty(String empId, int month, int year) {
+        String sql = "SELECT SUM(amount) as total FROM rewards_penalties WHERE employee_id = ? AND month = ? AND year = ?";
+        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, empId); pstmt.setInt(2, month); pstmt.setInt(3, year);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) return rs.getDouble("total");
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    public List<String[]> getDepartmentRewardPenaltyHistory(String department, int month, int year) {
+        List<String[]> list = new ArrayList<>();
+        String sql = "SELECT e.name, r.amount, r.reason FROM rewards_penalties r JOIN employees e ON r.employee_id = e.id WHERE e.department = ? AND r.month = ? AND r.year = ? ORDER BY r.id DESC";
+        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, department); pstmt.setInt(2, month); pstmt.setInt(3, year);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                double amt = rs.getDouble("amount");
+                list.add(new String[]{ rs.getString("name"), amt >= 0 ? "Thưởng" : "Phạt", String.format("%,.0f VNĐ", amt), rs.getString("reason") });
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    public void sendNotificationAsAdmin(String adminUsername, String message) {
+        String sql = "INSERT INTO notifications (account_username, message, created_at) VALUES (?, ?, ?)";
+        try (Connection conn = DatabaseHelper.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminUsername); pstmt.setString(2, message); pstmt.setTimestamp(3, new Timestamp(System.currentTimeMillis())); pstmt.executeUpdate();
         } catch (Exception e) { e.printStackTrace(); }
     }
 }

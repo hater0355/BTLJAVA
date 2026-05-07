@@ -14,6 +14,7 @@ public class Employee {
     private String giaDinh;
     private String lienLacKhan;
     private LocalDate ngayVaoLam;
+    private int nguoiPhuThuoc; // Số người phụ thuộc
 
     // THÊM MỚI: Hàm tạo mặc định (Cần thiết khi khởi tạo đối tượng rỗng từ CSDL)
     public Employee() {
@@ -56,6 +57,9 @@ public class Employee {
 
     public LocalDate getNgayVaoLam() { return ngayVaoLam; }
     public void setNgayVaoLam(LocalDate ngayVaoLam) { this.ngayVaoLam = ngayVaoLam; }
+
+    public int getNguoiPhuThuoc() { return nguoiPhuThuoc; }
+    public void setNguoiPhuThuoc(int nguoiPhuThuoc) { this.nguoiPhuThuoc = nguoiPhuThuoc; }
 
     // --- CÁC HÀM TÍNH TOÁN TỰ ĐỘNG ---
     

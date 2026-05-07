@@ -35,8 +35,19 @@ public class LoginUI extends JFrame {
     }
 
     private JPanel createLoginCard() {
-        JPanel panel = new JPanel(null);
-        panel.setBackground(BG_COLOR);
+        // HIỆU ỨNG MỚI: Nền Gradient hiện đại cho Login thay vì màu phẳng đơn điệu
+        JPanel panel = new JPanel(null) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                GradientPaint gp = new GradientPaint(0, 0, new Color(245, 247, 250), 0, getHeight(), new Color(228, 233, 242));
+                g2.setPaint(gp);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
 
         JLabel title = new JLabel("ĐĂNG NHẬP", SwingConstants.CENTER);
         title.setBounds(0, 50, 420, 40);
@@ -60,11 +71,11 @@ public class LoginUI extends JFrame {
         txtPass.setBackground(Color.WHITE);
         txtPass.setEchoChar('•'); 
 
-        RoundedButton btnShowPass = new RoundedButton("👁");
+        RoundedButton btnShowPass = new RoundedButton("Hiện");
         btnShowPass.setBounds(320, 210, 40, 40);
         btnShowPass.setBackground(Color.WHITE);
         btnShowPass.setForeground(TEXT_SECONDARY);
-        btnShowPass.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+        btnShowPass.setFont(new Font("Tahoma", Font.BOLD, 12));
         btnShowPass.addActionListener(e -> {
             if (txtPass.getEchoChar() == (char) 0) {
                 txtPass.setEchoChar('•'); btnShowPass.setForeground(TEXT_SECONDARY);
@@ -135,7 +146,7 @@ public class LoginUI extends JFrame {
                         JPasswordField pf = new JPasswordField();
                         // FIX: Sửa lỗi JOptionPane bị cắt
                         if (JOptionPane.showConfirmDialog(this, pf, 
-                            "⚠️ Vui lòng nhập mật khẩu mới của riêng bạn để tiếp tục:", 
+                            "Vui lòng nhập mật khẩu mới của riêng bạn để tiếp tục:", 
                             JOptionPane.OK_CANCEL_OPTION,
                             JOptionPane.QUESTION_MESSAGE) == JOptionPane.OK_OPTION) {
                             
@@ -147,7 +158,7 @@ public class LoginUI extends JFrame {
                                 return;
                             }
                             EmployeeManager.getInstance().changePassword(u, newPass);
-                            JOptionPane.showMessageDialog(this, "✅ Đổi mật khẩu thành công!");
+                            JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công!");
                         } else { 
                             EmployeeManager.getInstance().logoutUser(); 
                             return; 
@@ -201,16 +212,27 @@ public class LoginUI extends JFrame {
             }
 
             if (EmployeeManager.getInstance().resetPassword(user, email, newPass)) {
-                JOptionPane.showMessageDialog(this, "✅ Cập nhật mật khẩu thành công! Vui lòng đăng nhập lại.");
+                JOptionPane.showMessageDialog(this, "Cập nhật mật khẩu thành công! Vui lòng đăng nhập lại.");
             } else {
-                JOptionPane.showMessageDialog(this, "❌ Sai tên tài khoản hoặc Email không khớp!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Sai tên tài khoản hoặc Email không khớp!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private JPanel createRegisterCard() {
-        JPanel panel = new JPanel(null);
-        panel.setBackground(BG_COLOR);
+        // HIỆU ỨNG MỚI: Nền Gradient hiện đại cho Register
+        JPanel panel = new JPanel(null) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                GradientPaint gp = new GradientPaint(0, 0, new Color(245, 247, 250), 0, getHeight(), new Color(228, 233, 242));
+                g2.setPaint(gp);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
 
         JLabel title = new JLabel("TẠO TÀI KHOẢN", SwingConstants.CENTER);
         title.setBounds(0, 15, 420, 30);

@@ -2,10 +2,13 @@ package BaiTapLon;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 public class RoundedTextField extends JTextField {
     // Độ bo góc (đồng bộ với nút bấm là 15)
     private int radius = 15;
+    private boolean isFocused = false; // Biến kiểm tra trạng thái tương tác
 
     // BỔ SUNG: Hàm khởi tạo rỗng (Sửa lỗi new RoundedTextField() bị đỏ)
     public RoundedTextField() {
@@ -35,6 +38,29 @@ public class RoundedTextField extends JTextField {
         // Tạo khoảng cách (padding) bên trong ô để chữ không bị dính sát vào lề
         setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15)); 
         setFont(new Font("Tahoma", Font.PLAIN, 14));
+        
+        // Tự động thiết lập màu nền mặc định theo giao diện Sáng / Tối
+        boolean isDark = false;
+        try { isDark = DashboardUI.isDarkMode || EmployeeDashboardUI.isDarkMode; } catch (Exception e) {}
+        setBackground(isDark ? new Color(55, 65, 81) : Color.WHITE);
+
+        // HIỆU ỨNG FOCUS: Đổi màu viền khi nhấp chuột vào ô nhập liệu
+        addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent e) { isFocused = true; repaint(); }
+            @Override public void focusLost(FocusEvent e) { isFocused = false; repaint(); }
+        });
+    }
+
+    @Override
+    public void setBackground(Color bg) {
+        super.setBackground(bg);
+        // Tự động đổi màu chữ tương phản với màu nền để chống chìm chữ
+        if (bg != null) {
+            double luminance = (0.299 * bg.getRed() + 0.587 * bg.getGreen() + 0.114 * bg.getBlue()) / 255;
+            Color textColor = luminance > 0.5 ? new Color(17, 24, 39) : new Color(243, 244, 246);
+            setForeground(textColor);
+            setCaretColor(textColor);
+        }
     }
 
     @Override
@@ -55,9 +81,15 @@ public class RoundedTextField extends JTextField {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
-        // Vẽ viền (border) cho ô nhập liệu. Màu xám nhạt cho thanh lịch.
-        g2.setColor(new Color(200, 200, 200)); 
-        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius, radius);
+        // Nếu đang được chọn (Focus), viền sẽ sáng màu Cam và viền dày hơn
+        if (isFocused) {
+            g2.setColor(new Color(245, 158, 11)); // Màu cam nổi bật (COLOR_ORANGE)
+            g2.setStroke(new BasicStroke(2f));
+        } else {
+            g2.setColor(new Color(200, 200, 200)); // Màu xám nhạt khi bình thường
+            g2.setStroke(new BasicStroke(1f));
+        }
+        g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, radius, radius);
         
         g2.dispose();
     }
