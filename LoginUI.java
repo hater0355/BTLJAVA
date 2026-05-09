@@ -17,6 +17,9 @@ public class LoginUI extends JFrame {
     private final Color COLOR_LOGIN = new Color(37, 99, 235);      
     private final Color COLOR_REGISTER = new Color(16, 185, 129);  
 
+    // =========================================================
+    // KHỞI TẠO KHUNG GIAO DIỆN ĐĂNG NHẬP
+    // =========================================================
     public LoginUI() {
         setTitle("Hệ Thống Quản Lý Công Ty - Đăng Nhập");
         setSize(450, 750); 
@@ -34,8 +37,10 @@ public class LoginUI extends JFrame {
         setVisible(true);
     }
 
+    // =========================================================
+    // 1. TẠO GIAO DIỆN ĐĂNG NHẬP TÀI KHOẢN
+    // =========================================================
     private JPanel createLoginCard() {
-        // HIỆU ỨNG MỚI: Nền Gradient hiện đại cho Login thay vì màu phẳng đơn điệu
         JPanel panel = new JPanel(null) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -119,7 +124,6 @@ public class LoginUI extends JFrame {
         String savedUser = prefs.get("savedUser", "");
         if (!savedUser.isEmpty()) {
             txtUser.setText(savedUser);
-            // Không tự động điền mật khẩu để tăng bảo mật
             chkRemember.setSelected(true);
         }
 
@@ -130,7 +134,6 @@ public class LoginUI extends JFrame {
 
             String role = EmployeeManager.getInstance().authenticateUser(u, p);
             if (role != null) {
-                // Cải tiến bảo mật: Chỉ lưu tên đăng nhập, không bao giờ lưu mật khẩu
                 if (chkRemember.isSelected()) { 
                     prefs.put("savedUser", u);
                 } else { 
@@ -144,14 +147,12 @@ public class LoginUI extends JFrame {
                 else {
                     if (p.equals("123")) {
                         JPasswordField pf = new JPasswordField();
-                        // FIX: Sửa lỗi JOptionPane bị cắt
                         if (JOptionPane.showConfirmDialog(this, pf, 
                             "Vui lòng nhập mật khẩu mới của riêng bạn để tiếp tục:", 
                             JOptionPane.OK_CANCEL_OPTION,
                             JOptionPane.QUESTION_MESSAGE) == JOptionPane.OK_OPTION) {
                             
                             String newPass = new String(pf.getPassword());
-                            // FIX: Sửa lỗi EmployeeManager bị cắt
                             if (newPass.isEmpty() || newPass.equals("123")) { 
                                 JOptionPane.showMessageDialog(this, "Mật khẩu mới không được để trống!"); 
                                 EmployeeManager.getInstance().logoutUser();
@@ -165,28 +166,21 @@ public class LoginUI extends JFrame {
                         }
                     }
                     
-                    // ========================================================
-                    // TRẠM KIỂM SOÁT HỒ SƠ LẦN ĐẦU ĐĂNG NHẬP (ĐÃ NÂNG CẤP AN TOÀN)
-                    // ========================================================
                     Employee myProfile = EmployeeManager.getInstance().getCurrentEmployeeProfile();
                     
-                    // Chốt chặn an toàn: Báo lỗi nếu mất kết nối CSDL đột ngột
                     if (myProfile == null) {
                         JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu hồ sơ! Vui lòng thử đăng nhập lại.", "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
                         EmployeeManager.getInstance().logoutUser();
                         return;
                     }
                     
-                    // Nếu chưa có số điện thoại khẩn cấp -> Bắt buộc điền
                     if (myProfile.getLienLacKhan() == null || myProfile.getLienLacKhan().trim().isEmpty()) {
                         new FirstLoginSetupUI(myProfile.getId());
                         dispose(); 
                     } else {
-                        // Nếu đã điền rồi -> Vào thẳng giao diện làm việc
                         new EmployeeDashboardUI(); 
                         dispose(); 
                     }
-                    // ========================================================
                 }
             } else { JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!", "Lỗi", JOptionPane.ERROR_MESSAGE); }
         });
@@ -196,6 +190,9 @@ public class LoginUI extends JFrame {
         return panel;
     }
 
+    // =========================================================
+    // HỘP THOẠI XỬ LÝ QUÊN MẬT KHẨU
+    // =========================================================
     private void showForgotPasswordDialog() {
         JTextField txtUser = new JTextField();
         JTextField txtEmail = new JTextField();
@@ -219,8 +216,10 @@ public class LoginUI extends JFrame {
         }
     }
 
+    // =========================================================
+    // 2. TẠO GIAO DIỆN ĐĂNG KÝ TÀI KHOẢN (ADMIN / NHÂN VIÊN)
+    // =========================================================
     private JPanel createRegisterCard() {
-        // HIỆU ỨNG MỚI: Nền Gradient hiện đại cho Register
         JPanel panel = new JPanel(null) {
             @Override
             protected void paintComponent(Graphics g) {

@@ -36,6 +36,9 @@ public class EmployeeDashboardUI extends JFrame {
     private String lastSeenNotif = null;
     private Timer notifTimer;
 
+    // =========================================================
+    // KHỞI TẠO KHUNG GIAO DIỆN NHÂN VIÊN
+    // =========================================================
     public EmployeeDashboardUI() {
         setTitle("Hệ Thống Quản Lý Công Ty - Cổng Nhân Viên");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -75,7 +78,6 @@ public class EmployeeDashboardUI extends JFrame {
                 mainCardPanel.add(createThuongPhatPanel(), "ThuongPhat");
             }
             
-            // Kích hoạt tiến trình quét thông báo ngầm
             startNotificationPolling();
             checkAndShowBirthdays();
             checkYesterdayCheckOut();
@@ -88,13 +90,15 @@ public class EmployeeDashboardUI extends JFrame {
 
     @Override
     public void dispose() {
-        // Dừng tiến trình chạy ngầm khi đóng cửa sổ (Chống rò rỉ bộ nhớ khi đổi Dark Mode)
         if (notifTimer != null && notifTimer.isRunning()) {
             notifTimer.stop();
         }
         super.dispose();
     }
 
+    // =========================================================
+    // TẠO THANH MENU BÊN TRÁI (SIDEBAR)
+    // =========================================================
     private JPanel createSidebar() {
         JPanel sidebar = new JPanel(); 
         sidebar.setPreferredSize(new Dimension(SIDEBAR_WIDTH, 0)); 
@@ -176,7 +180,6 @@ public class EmployeeDashboardUI extends JFrame {
         popup.add(header); 
         popup.addSeparator();
 
-        // --- BẮT ĐẦU PHẦN THANH TRƯỢT GIAO DIỆN ---
         JPanel themePanel = new JPanel(new BorderLayout());
         themePanel.setBackground(isDarkMode ? BG_CARD : Color.WHITE);
         themePanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
@@ -206,7 +209,6 @@ public class EmployeeDashboardUI extends JFrame {
         themePanel.add(toggleTheme, BorderLayout.EAST);
         popup.add(themePanel);
         popup.addSeparator();
-        // --- KẾT THÚC PHẦN THANH TRƯỢT GIAO DIỆN ---
 
         JMenuItem itemLogout = new JMenuItem("Đăng xuất"); 
         itemLogout.setIcon(IconUtils.createLogoutIcon(new Color(220, 38, 38)));
@@ -245,6 +247,9 @@ public class EmployeeDashboardUI extends JFrame {
         return btn;
     }
 
+    // =========================================================
+    // 1. GIAO DIỆN ĐĂNG KÝ LỊCH LÀM VIỆC & XIN NGHỈ
+    // =========================================================
     private JPanel createDangKyLichPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 15)); 
         p.setOpaque(false); 
@@ -336,23 +341,20 @@ private void renderCalendarGrid() {
             LocalDate date = currentCalMonth.withDayOfMonth(i);
             String shift = EmployeeManager.getInstance().getSchedule(myProfile.getId(), date);
 
-            // XỬ LÝ CHUỖI HIỂN THỊ TRÊN NÚT BẤM
             String displayShift = shift;
             if (shift.startsWith("Chờ duyệt nghỉ")) displayShift = "Chờ duyệt";
             else if (shift.startsWith("Đã duyệt nghỉ")) displayShift = "Nghỉ phép";
             else if (shift.startsWith("Từ chối nghỉ")) displayShift = "Từ chối";
             else if (shift.equals("Chưa đăng ký")) displayShift = "";
-            else if (shift.startsWith("Ca 1")) displayShift = "Ca 1"; // Rút gọn chuỗi dài thành "Ca 1"
-            else if (shift.startsWith("Ca 2")) displayShift = "Ca 2"; // Rút gọn chuỗi dài thành "Ca 2"
+            else if (shift.startsWith("Ca 1")) displayShift = "Ca 1";
+            else if (shift.startsWith("Ca 2")) displayShift = "Ca 2";
 
-            // Gắn displayShift trực tiếp vào HTML thay vì dùng hàm split() cũ
             JButton btnDay = new RoundedButton("<html><center>" + i + "<br><font size='2'>" + displayShift + "</font></center></html>");
             btnDay.setFont(new Font("Tahoma", Font.BOLD, 14)); 
             btnDay.setFocusPainted(false); 
             btnDay.setCursor(new Cursor(Cursor.HAND_CURSOR));
             btnDay.setBorder(BorderFactory.createLineBorder(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY));
 
-            // TÔ MÀU NÚT BẤM
             if (shift.startsWith("Chờ duyệt")) { 
                 btnDay.setBackground(new Color(245, 158, 11)); btnDay.setForeground(Color.WHITE); 
             } else if (shift.startsWith("Đã duyệt")) { 
@@ -360,7 +362,6 @@ private void renderCalendarGrid() {
             } else if (shift.startsWith("Từ chối")) { 
                 btnDay.setBackground(Color.GRAY); btnDay.setForeground(Color.WHITE); 
             } else if (shift.startsWith("Ca 1") || shift.startsWith("Ca 2")) { 
-                // Màu xanh dương cho những ngày có Ca 1 hoặc Ca 2
                 btnDay.setBackground(new Color(59, 130, 246)); btnDay.setForeground(Color.WHITE); 
             } else { 
                 if (date.getDayOfWeek() == java.time.DayOfWeek.SATURDAY || date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
@@ -403,7 +404,6 @@ private void renderCalendarGrid() {
             return;
         }
 
-        // Cập nhật lại điều kiện tên ca thành Ca 1 và Ca 2
         if (currentShift.startsWith("Ca 1") || currentShift.startsWith("Ca 2")) {
             String[] options = {"Xin nghỉ phép", "Đóng"};
             int choice = JOptionPane.showOptionDialog(this, 
@@ -413,7 +413,7 @@ private void renderCalendarGrid() {
                 JOptionPane.QUESTION_MESSAGE, 
                 null, 
                 options, 
-                options[1]); // Mặc định focus vào nút Đóng
+                options[1]);
             
             if (choice == 0) {
                 String reason = JOptionPane.showInputDialog(this, "Nhập lý do xin nghỉ phép (Bắt buộc):");
@@ -430,7 +430,6 @@ private void renderCalendarGrid() {
         JComboBox<String> cbShift = new JComboBox<>(options);
         
         if (currentShift.equals("Nghỉ")) {
-            // Giữ mặc định là index 0 nếu là "Nghỉ"
             cbShift.setSelectedIndex(0);
         }
 
@@ -461,8 +460,6 @@ private void renderCalendarGrid() {
                 }
             }
 
-            // FIX: Xóa dòng này vì không cần thiết - chỉ có 2 option
-            // if (cbShift.getSelectedIndex() == 3) shiftToSave = "Nghỉ";
             
             EmployeeManager.getInstance().saveSchedule(myProfile.getId(), date, shiftToSave);
             JOptionPane.showMessageDialog(this, "Đã lưu thành công!");
@@ -470,6 +467,9 @@ private void renderCalendarGrid() {
         }
     }
 
+    // =========================================================
+    // 2. GIAO DIỆN CHẤM CÔNG (VÀO CA / TAN CA)
+    // =========================================================
     private JPanel createChamCongPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); 
         p.setOpaque(false); 
@@ -542,7 +542,6 @@ private void renderCalendarGrid() {
         btnCheckIn.addActionListener(e -> {
             String shiftToday = EmployeeManager.getInstance().getSchedule(myProfile.getId(), today);
             System.out.println("🔍 DEBUG - shiftToday: [" + shiftToday + "]");
-            // FIX: Kiểm tra Ca 1 và Ca 2 thay vì Hành chính, Ca Sáng, Ca Chiều
             if (!shiftToday.startsWith("Ca 1") && !shiftToday.startsWith("Ca 2")) {
                 JOptionPane.showMessageDialog(this, 
                     "Hôm nay bạn không có ca làm việc.\nVui lòng đăng ký lịch làm trước khi chấm công!", 
@@ -555,7 +554,7 @@ private void renderCalendarGrid() {
 
             EmployeeManager.getInstance().checkIn(myProfile.getId(), today, now);
             lblTimeDisplay.setText("Giờ vào ca: " + now.toString().substring(0, 5));
-            record[0] = now.toString().substring(0, 5); // FIX: Cập nhật biến record để nút Check-out lấy đúng giờ
+            record[0] = now.toString().substring(0, 5);
             btnCheckIn.setText("Đã Check-in"); 
             btnCheckIn.setEnabled(false); 
             btnCheckIn.setBackground(Color.GRAY);
@@ -584,6 +583,9 @@ private void renderCalendarGrid() {
         return p;
     }
 
+    // =========================================================
+    // TRẠNG THÁI: TÀI KHOẢN CHƯA GIA NHẬP CÔNG TY
+    // =========================================================
     private JPanel createNoJobPanel() {
         JPanel p = new JPanel(new GridBagLayout()); 
         p.setOpaque(false); 
@@ -602,7 +604,6 @@ private void renderCalendarGrid() {
         title.setAlignmentX(Component.CENTER_ALIGNMENT); 
         title.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
         
-        // FIX: Sửa HTML string bị cắt
         JLabel msg = new JLabel("<html><div style='text-align: center;'>Tài khoản của bạn hiện không trực thuộc Công ty nào.<br>Vui lòng nhập Mã Công Ty mới để nộp hồ sơ xin việc.</div></html>"); 
         msg.setFont(new Font("Tahoma", Font.PLAIN, 16)); 
         msg.setForeground(TEXT_PRIMARY); 
@@ -658,6 +659,9 @@ private void renderCalendarGrid() {
         return p;
     }
 
+    // =========================================================
+    // TRẠNG THÁI: HỒ SƠ ĐANG CHỜ GIÁM ĐỐC DUYỆT
+    // =========================================================
     private JPanel createPendingPanel() {
         JPanel p = new JPanel(new GridBagLayout()); 
         p.setOpaque(false); 
@@ -677,7 +681,6 @@ private void renderCalendarGrid() {
         title.setAlignmentX(Component.CENTER_ALIGNMENT); 
         title.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
         
-        // FIX: Sửa HTML string bị cắt
         JLabel msg = new JLabel("<html><div style='text-align: center;'>Giám đốc chưa phê duyệt hồ sơ xin việc của bạn.<br>Vui lòng liên hệ quản lý hoặc quay lại sau.</div></html>"); 
         msg.setFont(new Font("Tahoma", Font.PLAIN, 16)); 
         msg.setForeground(TEXT_PRIMARY); 
@@ -690,6 +693,9 @@ private void renderCalendarGrid() {
         return p;
     }
 
+    // =========================================================
+    // 3. GIAO DIỆN HỒ SƠ CÁ NHÂN TỔNG QUAN
+    // =========================================================
     private JPanel createTongQuanPanel() {
         JPanel p = new JPanel(new BorderLayout(20, 20)); 
         p.setOpaque(false); 
@@ -700,11 +706,9 @@ private void renderCalendarGrid() {
         title.setForeground(TEXT_PRIMARY); 
         p.add(title, BorderLayout.NORTH);
         
-        // Tạo Panel chia 2 cột để lấp đầy không gian trống
         JPanel gridPanel = new JPanel(new GridLayout(1, 2, 30, 0));
         gridPanel.setOpaque(false);
         
-        // --- CỘT TRÁI: THÔNG TIN CƠ BẢN & AVATAR ---
         JPanel leftCard = new JPanel(new BorderLayout(0, 20)) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -720,7 +724,6 @@ private void renderCalendarGrid() {
         
         JPanel avatarPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         avatarPanel.setOpaque(false);
-        // Dùng IconUtils vẽ Avatar lớn
         JLabel lblAvatar = new JLabel(IconUtils.createAvatarIcon(120, new Color(156, 163, 175)));
         avatarPanel.add(lblAvatar);
         
@@ -735,9 +738,8 @@ private void renderCalendarGrid() {
         leftCard.add(avatarPanel, BorderLayout.NORTH);
         leftCard.add(basicInfoPanel, BorderLayout.CENTER);
         
-        // ĐÃ THÊM: Nút Đổi mật khẩu cá nhân
         JButton btnChangePass = new RoundedButton("Đổi mật khẩu");
-        btnChangePass.setBackground(new Color(75, 85, 99)); // Màu xám đậm
+        btnChangePass.setBackground(new Color(75, 85, 99));
         btnChangePass.setForeground(Color.WHITE);
         btnChangePass.setFont(new Font("Tahoma", Font.BOLD, 14));
         btnChangePass.addActionListener(e -> showChangePasswordDialog());
@@ -745,7 +747,6 @@ private void renderCalendarGrid() {
         actionPanel.add(btnChangePass);
         leftCard.add(actionPanel, BorderLayout.SOUTH);
         
-        // --- CỘT PHẢI: THÔNG TIN LIÊN HỆ & CHI TIẾT CÁ NHÂN ---
         JPanel rightCard = new JPanel(new GridLayout(9, 1, 5, 5)) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -764,7 +765,6 @@ private void renderCalendarGrid() {
         rightTitle.setForeground(COLOR_ORANGE);
         rightCard.add(rightTitle);
         
-        // Kéo thêm dữ liệu liên hệ từ Database
         String[] contactInfo = EmployeeManager.getInstance().getEmployeeContactInfo(myProfile.getId());
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String ngaySinh = myProfile.getNgaySinh() != null ? myProfile.getNgaySinh().format(fmt) + " (" + myProfile.getTuoi() + " tuổi)" : "Chưa cập nhật";
@@ -778,7 +778,6 @@ private void renderCalendarGrid() {
         rightCard.add(createLabelInfo("Ngày vào làm: ", ngayVao));
         rightCard.add(createLabelInfo("Người phụ thuộc: ", String.valueOf(myProfile.getNguoiPhuThuoc())));
         
-        // Thêm đường kẻ ngang ngăn cách
         rightCard.add(new JLabel("<html><hr></html>")); 
         
         JLabel emergencyTitle = new JLabel("<html><font color='#EF4444'><b>THÔNG TIN KHẨN CẤP</b></font></html>");
@@ -789,7 +788,6 @@ private void renderCalendarGrid() {
         gridPanel.add(leftCard);
         gridPanel.add(rightCard);
         
-        // Bọc vào Wrapper để form nổi lên phía trên, không bị kéo dãn toàn màn hình
         JPanel wrapper = new JPanel(new BorderLayout()); 
         wrapper.setOpaque(false); 
         wrapper.add(gridPanel, BorderLayout.NORTH); 
@@ -805,7 +803,6 @@ private void renderCalendarGrid() {
         return lbl; 
     }
 
-    // ĐÃ THÊM: Hộp thoại và xử lý Logic đổi mật khẩu
     private void showChangePasswordDialog() {
         JDialog d = new JDialog(this, "Bảo mật - Đổi Mật Khẩu", true);
         d.setSize(400, 380);
@@ -846,13 +843,11 @@ private void renderCalendarGrid() {
             if (oldP.isEmpty() || newP.isEmpty() || confP.isEmpty()) { JOptionPane.showMessageDialog(d, "Vui lòng nhập đầy đủ thông tin!", "Cảnh báo", JOptionPane.WARNING_MESSAGE); return; }
             if (!newP.equals(confP)) { JOptionPane.showMessageDialog(d, "Mật khẩu xác nhận không khớp!", "Lỗi", JOptionPane.ERROR_MESSAGE); return; }
             
-            // Xác thực xem Mật khẩu cũ nhập vào có đúng không
             String currentUser = EmployeeManager.getInstance().getCurrentUsername();
             String role = EmployeeManager.getInstance().authenticateUser(currentUser, oldP);
             
             if (role == null) { JOptionPane.showMessageDialog(d, "Mật khẩu hiện tại không đúng!", "Lỗi xác thực", JOptionPane.ERROR_MESSAGE); return; }
             
-            // Nếu mọi thứ đều đúng thì tiến hành đổi
             EmployeeManager.getInstance().changePassword(currentUser, newP);
             JOptionPane.showMessageDialog(d, "Đổi mật khẩu thành công!\nVui lòng ghi nhớ mật khẩu mới của bạn.");
             d.dispose();
@@ -861,6 +856,9 @@ private void renderCalendarGrid() {
         d.add(p, BorderLayout.CENTER); d.add(bottomP, BorderLayout.SOUTH); d.setVisible(true);
     }
 
+    // =========================================================
+    // 4. GIAO DIỆN XEM DANH SÁCH ĐỒNG NGHIỆP CÙNG PHÒNG
+    // =========================================================
     private JPanel createDongNghiepPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); 
         p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
@@ -881,7 +879,6 @@ private void renderCalendarGrid() {
         header.add(title, BorderLayout.WEST); header.add(btnGrp, BorderLayout.EAST); 
         topContainer.add(header, BorderLayout.NORTH);
 
-        // Thêm thanh tìm kiếm vào bên dưới tiêu đề
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0)); searchPanel.setOpaque(false);
         JLabel lblSearch = new JLabel("Tìm kiếm theo tên:"); lblSearch.setFont(new Font("Tahoma", Font.BOLD, 14)); lblSearch.setForeground(TEXT_PRIMARY);
         JTextField txtSearch = new RoundedTextField(20);
@@ -907,7 +904,6 @@ private void renderCalendarGrid() {
         tbl.getTableHeader().setBackground(BG_CARD);
         tbl.getTableHeader().setForeground(TEXT_PRIMARY);
         
-        // Bộ lọc tự động theo thời gian thực (Lọc trên cột 1 - Họ tên)
         javax.swing.table.TableRowSorter<DefaultTableModel> sorter = new javax.swing.table.TableRowSorter<>(m);
         tbl.setRowSorter(sorter);
         
@@ -916,11 +912,11 @@ private void renderCalendarGrid() {
             String pos = cbPosFilter.getSelectedItem().toString();
             java.util.List<javax.swing.RowFilter<Object,Object>> filters = new java.util.ArrayList<>();
             
-            if (text.length() > 0) filters.add(javax.swing.RowFilter.regexFilter("(?i)" + text, 1)); // Lọc theo Cột 1 (Họ tên)
-            if (!"Tất cả chức vụ".equals(pos)) filters.add(javax.swing.RowFilter.regexFilter("(?i)^" + pos + "$", 2)); // Lọc theo Cột 2 (Chức vụ)
+            if (text.length() > 0) filters.add(javax.swing.RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(text), 1));
+            if (!"Tất cả chức vụ".equals(pos)) filters.add(javax.swing.RowFilter.regexFilter("(?i)^" + java.util.regex.Pattern.quote(pos) + "$", 2));
             
             if (filters.isEmpty()) sorter.setRowFilter(null);
-            else sorter.setRowFilter(javax.swing.RowFilter.andFilter(filters)); // Kết hợp cả 2 điều kiện
+            else sorter.setRowFilter(javax.swing.RowFilter.andFilter(filters));
         };
 
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -937,13 +933,13 @@ private void renderCalendarGrid() {
         
         LocalDate today = LocalDate.now();
         for (Employee emp : colleagues) {
-            if (!emp.getId().equals(myProfile.getId())) { // Bỏ qua bản thân, chỉ hiện đồng nghiệp
+            if (!emp.getId().equals(myProfile.getId())) {
                 String age = emp.getNgaySinh() != null ? String.valueOf(emp.getTuoi()) : "?";
                 String seniority = emp.getNgayVaoLam() != null ? String.valueOf(emp.getThamNien()) : "?";
                 
                 String displayName = emp.getName();
                 if (emp.getNgaySinh() != null && emp.getNgaySinh().getMonthValue() == today.getMonthValue() && emp.getNgaySinh().getDayOfMonth() == today.getDayOfMonth()) {
-                    displayName += " (Sinh nhật)"; // Thêm biểu tượng bánh kem nếu hôm nay là sinh nhật
+                    displayName += " (Sinh nhật)";
                 }
                 
                 m.addRow(new Object[]{emp.getId(), displayName, emp.getPosition(), age, seniority});
@@ -953,7 +949,7 @@ private void renderCalendarGrid() {
         btnViewDetails.addActionListener(e -> {
             int viewRow = tbl.getSelectedRow();
             if (viewRow == -1) { JOptionPane.showMessageDialog(this, "Vui lòng chọn một đồng nghiệp từ bảng để xem chi tiết!", "Thông báo", JOptionPane.WARNING_MESSAGE); return; }
-            int modelRow = tbl.convertRowIndexToModel(viewRow); // Cập nhật logic: Chuyển đổi vị trí dòng do bảng bị lọc
+            int modelRow = tbl.convertRowIndexToModel(viewRow);
             String empId = m.getValueAt(modelRow, 0).toString(); showColleagueDetailsDialog(empId);
         });
 
@@ -964,7 +960,6 @@ private void renderCalendarGrid() {
         Employee emp = EmployeeManager.getInstance().getEmployeeProfile(employeeId);
         if (emp == null) { JOptionPane.showMessageDialog(this, "Không tìm thấy dữ liệu của nhân viên này!"); return; }
         
-        // Lấy thêm thông tin liên lạc (Email, SĐT)
         String[] contactInfo = EmployeeManager.getInstance().getEmployeeContactInfo(employeeId);
         
         JDialog dialog = new JDialog(this, "Hồ Sơ Đồng Nghiệp - " + emp.getName(), true);
@@ -1025,6 +1020,9 @@ private void renderCalendarGrid() {
         dialog.add(p, BorderLayout.CENTER); dialog.add(bottomPanel, BorderLayout.SOUTH); dialog.setVisible(true);
     }
 
+    // =========================================================
+    // 5. GIAO DIỆN ĐỌC THÔNG BÁO TỪ CÔNG TY
+    // =========================================================
     private JPanel createThongBaoPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); 
         p.setOpaque(false); 
@@ -1044,16 +1042,14 @@ private void renderCalendarGrid() {
         updateNotifListPanel(EmployeeManager.getInstance().getNotifications(adminUser));
         
         JScrollPane scrollPane = new RoundedScrollPane(notifListPanel); 
-        scrollPane.setBorder(null); // RoundedScrollPane đã có viền riêng
         p.add(scrollPane, BorderLayout.CENTER); 
         return p;
     }
 
-    // Hàm hỗ trợ cập nhật lại danh sách thông báo trên giao diện
     private void updateNotifListPanel(List<String[]> notifs) {
         if (notifListPanel == null) return;
         
-        notifListPanel.removeAll(); // Xóa toàn bộ thông báo cũ hiển thị trên màn hình
+        notifListPanel.removeAll();
         
         boolean hasNotif = false;
         
@@ -1069,19 +1065,18 @@ private void renderCalendarGrid() {
             notifListPanel.add(createNotifItem("Chưa có thông báo nào từ Giám đốc.", "")); 
         }
         
-        notifListPanel.revalidate(); // Yêu cầu vẽ lại cấu trúc Layout
-        notifListPanel.repaint();    // Làm mới giao diện
+        notifListPanel.revalidate();
+        notifListPanel.repaint();
     }
 
     private boolean isVisibleToMe(String msg) {
-        if (msg.startsWith("[BÁO CÁO HOÀN THÀNH]")) return false; // Ẩn với nhân viên, chỉ Giám đốc mới thấy
+        if (msg.startsWith("[BÁO CÁO HOÀN THÀNH]")) return false;
         if (msg.startsWith("[GIAO VIỆC") || msg.startsWith("[Tăng ca") || msg.startsWith("[Quyết định")) {
-            // Nếu là thông báo cá nhân -> Chỉ hiển thị nếu chứa Mã NV hoặc Tên của chính nhân viên đó
             boolean forMe = msg.contains(myProfile.getId() + " - ") || msg.contains(myProfile.getName());
             boolean forMyDept = msg.contains("[Phòng ban] " + myProfile.getDepartment() + "]");
             return forMe || forMyDept;
         }
-        return true; // Các thông báo chung khác thì ai cũng thấy
+        return true;
     }
 
     private JPanel createNotifItem(String msg, String time) {
@@ -1143,6 +1138,9 @@ private void renderCalendarGrid() {
         return p;
     }
 
+    // =========================================================
+    // 6. GIAO DIỆN TRA CỨU PHIẾU LƯƠNG
+    // =========================================================
     private JPanel createTinhLuongPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); 
         p.setOpaque(false); 
@@ -1188,8 +1186,8 @@ private void renderCalendarGrid() {
         tbl.getTableHeader().setOpaque(false);
         tbl.getTableHeader().setBackground(BG_CARD);
         tbl.getTableHeader().setForeground(TEXT_PRIMARY);
-        tbl.getColumnModel().removeColumn(tbl.getColumnModel().getColumn(8)); // Ẩn cột Tổng Giờ đi
-        tbl.getColumnModel().removeColumn(tbl.getColumnModel().getColumn(7)); // Ẩn cột Quên CO đi
+        tbl.getColumnModel().removeColumn(tbl.getColumnModel().getColumn(8));
+        tbl.getColumnModel().removeColumn(tbl.getColumnModel().getColumn(7));
         tablePanel.add(new RoundedScrollPane(tbl), BorderLayout.CENTER);
         
         btnCal.addActionListener(e -> { 
@@ -1232,7 +1230,7 @@ private void renderCalendarGrid() {
     }
 
     // =========================================================
-    // GIAO DIỆN QUẢN LÝ THƯỞNG PHẠT (CHỈ TRƯỞNG PHÒNG THẤY)
+    // 7. GIAO DIỆN QUẢN LÝ THƯỞNG PHẠT (CHỈ TRƯỞNG PHÒNG THẤY)
     // =========================================================
     private JPanel createThuongPhatPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
@@ -1272,7 +1270,6 @@ private void renderCalendarGrid() {
         descPanel.add(new JLabel("<html><font size='4'><b>Lý do:</b></font></html>"), BorderLayout.NORTH); 
         JTextArea txtReason = new JTextArea(4, 20); txtReason.setLineWrap(true); txtReason.setWrapStyleWord(true); txtReason.setFont(new Font("Tahoma", Font.PLAIN, 14)); txtReason.setBackground(isDarkMode ? new Color(55, 65, 81) : Color.WHITE); txtReason.setForeground(TEXT_PRIMARY); txtReason.setCaretColor(TEXT_PRIMARY);
         
-        // Giới hạn 255 ký tự cho thanh nhập lý do thưởng phạt
         ((javax.swing.text.AbstractDocument) txtReason.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
             public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
                 if (string == null) return; int overLimit = (fb.getDocument().getLength() + string.length()) - 255;
@@ -1325,30 +1322,25 @@ private void renderCalendarGrid() {
         }); p.add(content, BorderLayout.CENTER); return p;
     }
 
-    // =========================================================
-    // HIỆU ỨNG TOAST POPUP VÀ QUÉT THÔNG BÁO TỰ ĐỘNG
-    // =========================================================
     private void startNotificationPolling() {
         String adminUser = EmployeeManager.getInstance().getMyAdminUsername();
         if (adminUser == null) return;
         
-        // Lấy danh sách thông báo hiện tại để làm mốc so sánh
         List<String[]> initNotifs = EmployeeManager.getInstance().getNotifications(adminUser);
         if (!initNotifs.isEmpty()) {
             lastSeenNotif = initNotifs.get(0)[0] + "_" + initNotifs.get(0)[1];
         }
         
-        // Khởi tạo Timer quét DB ngầm mỗi 5 giây (5000ms)
         notifTimer = new Timer(5000, e -> {
             List<String[]> notifs = EmployeeManager.getInstance().getNotifications(adminUser);
             if (!notifs.isEmpty()) {
                 String latest = notifs.get(0)[0] + "_" + notifs.get(0)[1];
                 if (lastSeenNotif == null || !latest.equals(lastSeenNotif)) {
-                    lastSeenNotif = latest; // Cập nhật mốc
+                    lastSeenNotif = latest;
                     if (isVisibleToMe(notifs.get(0)[1])) {
-                        showToast(notifs.get(0)[1]); // Hiển thị Toast nếu là của mình
+                        showToast(notifs.get(0)[1]);
                     }
-                    updateNotifListPanel(notifs); // Cập nhật luôn vào Panel chứa thông báo
+                    updateNotifListPanel(notifs);
                 }
             }
         });
@@ -1361,7 +1353,7 @@ private void renderCalendarGrid() {
         List<String> birthdays = EmployeeManager.getInstance().getCompanyBirthdaysToday(adminUser);
         if (!birthdays.isEmpty()) {
             String names = String.join(", ", birthdays);
-            Timer t = new Timer(3000, e -> { // Đợi 3 giây sau khi mở app mới báo
+            Timer t = new Timer(3000, e -> {
                 showToast("Chúc mừng sinh nhật:\n" + names);
             });
             t.setRepeats(false);
@@ -1374,9 +1366,8 @@ private void renderCalendarGrid() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         String[] record = EmployeeManager.getInstance().getAttendanceRecord(myProfile.getId(), yesterday);
         
-        // Nếu có giờ vào (check_in) nhưng giờ ra bị hệ thống chốt là 23:59 (do quên Check-out)
         if (record[0] != null && "23:59".equals(record[1])) {
-            Timer t = new Timer(1500, e -> { // Đợi 1.5 giây sau khi load giao diện mới hiển thị
+            Timer t = new Timer(1500, e -> {
                 JOptionPane.showMessageDialog(this, 
                     "<html><body style='width: 320px; font-family: Tahoma; font-size: 14px;'>" +
                     "<h3 style='color: #EF4444; margin-top: 0;'>Cảnh báo Quên Check-out</h3>" +
@@ -1393,16 +1384,16 @@ private void renderCalendarGrid() {
 
     private void showToast(String message) {
         JDialog toast = new JDialog();
-        toast.setUndecorated(true); // Bỏ thanh viền cửa sổ
-        toast.setAlwaysOnTop(true); // Luôn nổi trên cùng
-        toast.setFocusableWindowState(false); // Không cướp focus của người dùng đang làm việc
+        toast.setUndecorated(true);
+        toast.setAlwaysOnTop(true);
+        toast.setFocusableWindowState(false);
         
-        try { toast.setBackground(new Color(0, 0, 0, 0)); } catch (Exception ex) {} // Làm trong suốt nền nếu OS hỗ trợ
+        try { toast.setBackground(new Color(0, 0, 0, 0)); } catch (Exception ex) {}
         
         JPanel panel = new JPanel(new BorderLayout(15, 10));
-        panel.setBackground(new Color(31, 41, 55, 235)); // Màu Dark Mode hơi trong suốt
+        panel.setBackground(new Color(31, 41, 55, 235));
         panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(COLOR_ORANGE, 2), // Viền cam nổi bật
+            BorderFactory.createLineBorder(COLOR_ORANGE, 2),
             BorderFactory.createEmptyBorder(15, 20, 15, 20)
         ));
         
@@ -1410,7 +1401,6 @@ private void renderCalendarGrid() {
         lblIcon.setFont(new Font("Tahoma", Font.BOLD, 22));
         lblIcon.setForeground(Color.WHITE);
         
-        // Ép text tự động xuống dòng và giới hạn chiều rộng
         JLabel lblMsg = new JLabel("<html><p style='width:220px; color:white; font-family:Tahoma; margin:0;'><b>Có thông báo mới:</b><br>" + message.replaceAll("\n", "<br>") + "</p></html>");
         
         panel.add(lblIcon, BorderLayout.WEST);
@@ -1418,26 +1408,20 @@ private void renderCalendarGrid() {
         toast.add(panel);
         toast.pack();
         
-        // Tính toán vị trí xuất hiện: Góc dưới bên phải màn hình
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         toast.setLocation(screenSize.width - toast.getWidth() - 20, screenSize.height - toast.getHeight() - 50);
         
-        Toolkit.getDefaultToolkit().beep(); // Phát âm thanh Ping cảnh báo
+        Toolkit.getDefaultToolkit().beep();
         toast.setVisible(true);
         
-        // Tự động đóng Toast sau 5 giây
         Timer hideTimer = new Timer(5000, e -> toast.dispose());
         hideTimer.setRepeats(false);
         hideTimer.start();
     }
 
-    // =========================================================
-    // BIỂU ĐỒ ĐƯỜNG TÙY CHỈNH DÀNH CHO LƯƠNG
-    // =========================================================
     class CustomLineChart extends JPanel {
         private DefaultTableModel model;
         
-        // ĐÃ THÊM: Danh sách lưu tọa độ và vị trí dòng để click chuột
         private java.util.List<java.awt.Rectangle> clickZones = new java.util.ArrayList<>();
         private java.util.List<Integer> clickRows = new java.util.ArrayList<>();
 
@@ -1445,11 +1429,9 @@ private void renderCalendarGrid() {
             this.model = model;
             setOpaque(false);
             
-            // Lắng nghe sự kiện click chuột vào các điểm trên biểu đồ
             addMouseListener(new MouseAdapter() {
                 @Override public void mouseClicked(MouseEvent e) {
                     for (int i = 0; i < clickZones.size(); i++) {
-                        // Nếu tọa độ con trỏ chuột nằm trong vùng của một điểm neo
                         if (clickZones.get(i).contains(e.getPoint())) {
                             int r = clickRows.get(i);
                             String month = model.getValueAt(r, 0).toString();
@@ -1474,7 +1456,6 @@ private void renderCalendarGrid() {
                 }
             });
             
-            // Hiệu ứng đổi con trỏ chuột thành hình bàn tay và hiện Tooltip khi lướt qua điểm
             addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
                 @Override public void mouseMoved(java.awt.event.MouseEvent e) {
                     boolean onPoint = false;
@@ -1497,11 +1478,9 @@ private void renderCalendarGrid() {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
-            // Xóa rỗng các tọa độ cũ để chuẩn bị vẽ lại
             clickZones.clear();
             clickRows.clear();
 
-            // Vẽ nền bo góc (Hỗ trợ Dark Mode)
             g2.setColor(BG_CARD);
             g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
             g2.setColor(isDarkMode ? new Color(55, 65, 81) : new Color(229, 231, 235));
@@ -1518,35 +1497,31 @@ private void renderCalendarGrid() {
                 return;
             }
 
-            // Lấy dữ liệu từ Table Model
             java.util.List<String> labels = new java.util.ArrayList<>();
             java.util.List<Double> values = new java.util.ArrayList<>();
             double maxVal = 0;
             
             for (int i = 0; i < rowCount; i++) {
                 labels.add(model.getValueAt(i, 0).toString());
-                // Cắt bỏ chữ " VNĐ" và dấu phẩy để lấy số thực
                 String salaryStr = model.getValueAt(i, 6).toString().replaceAll("[^0-9]", "");
                 double val = salaryStr.isEmpty() ? 0 : Double.parseDouble(salaryStr);
                 values.add(val);
                 if (val > maxVal) maxVal = val;
             }
 
-            maxVal = maxVal * 1.2; // Tăng đỉnh Y lên 20% để biểu đồ không bị đụng nóc
+            maxVal = maxVal * 1.2;
             if (maxVal == 0) maxVal = 1000000;
 
             int padding = 45;
             int width = getWidth() - padding * 2;
             int height = getHeight() - padding * 2 - 20;
 
-            // Vẽ trục X và Y
             g2.setColor(TEXT_SECONDARY);
             g2.setStroke(new BasicStroke(1f));
-            g2.drawLine(padding, getHeight() - padding, padding, padding - 10); // Trục Y
-            g2.drawLine(padding, getHeight() - padding, getWidth() - padding + 10, getHeight() - padding); // Trục X
+            g2.drawLine(padding, getHeight() - padding, padding, padding - 10);
+            g2.drawLine(padding, getHeight() - padding, getWidth() - padding + 10, getHeight() - padding);
 
-            // Vẽ đường Line Chart
-            g2.setColor(new Color(16, 185, 129)); // Màu Xanh lá (Emerald)
+            g2.setColor(new Color(16, 185, 129));
             g2.setStroke(new BasicStroke(3f));
 
             int stepX = (rowCount == 1) ? 0 : width / (rowCount - 1);
@@ -1557,33 +1532,27 @@ private void renderCalendarGrid() {
                 int y = getHeight() - padding - (int) ((values.get(i) / maxVal) * height);
                 Point p = new Point(x, y);
 
-                // Vẽ đường nối các điểm
                 if (prevPoint != null) g2.drawLine(prevPoint.x, prevPoint.y, p.x, p.y);
                 prevPoint = p;
             }
 
-            // Vẽ các điểm neo (Dot) và gắn Nhãn (Label)
             for (int i = 0; i < rowCount; i++) {
                 int x = (rowCount == 1) ? padding + width / 2 : padding + i * stepX;
                 int y = getHeight() - padding - (int) ((values.get(i) / maxVal) * height);
 
-                // Vẽ chấm tròn trắng viền xanh
                 g2.setColor(isDarkMode ? BG_CARD : Color.WHITE);
                 g2.fillOval(x - 6, y - 6, 12, 12);
                 g2.setColor(new Color(16, 185, 129));
                 g2.drawOval(x - 6, y - 6, 12, 12);
 
-                // Ghi tháng ở trục X
                 g2.setColor(TEXT_PRIMARY);
                 g2.setFont(new Font("Tahoma", Font.BOLD, 11));
                 g2.drawString(labels.get(i), x - 18, getHeight() - padding + 20);
 
-                // Ghi số tiền thực lĩnh ở phía trên điểm neo
                 String valStr = String.format("%,.0f đ", values.get(i));
                 FontMetrics fm = g2.getFontMetrics();
                 g2.drawString(valStr, x - fm.stringWidth(valStr) / 2, y - 12);
                 
-                // Lưu lại vùng tọa độ click (Mở rộng ra 15 pixel mỗi bên để người dùng dễ click trúng)
                 clickZones.add(new java.awt.Rectangle(x - 15, y - 15, 30, 30));
                 clickRows.add(i);
             }

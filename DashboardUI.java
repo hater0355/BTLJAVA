@@ -56,6 +56,9 @@ public class DashboardUI extends JFrame {
     private JLabel lblTotalTasks;
     private JLabel lblCompletedTasks;
 
+    // =========================================================
+    // KHỞI TẠO KHUNG GIAO DIỆN GIÁM ĐỐC
+    // =========================================================
     public DashboardUI() {
         setTitle("Hệ Thống Quản Lý Công Ty - Dành cho Giám Đốc");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -92,6 +95,9 @@ public class DashboardUI extends JFrame {
         refreshData(); checkAndShowBirthdays(); checkYesterdayCheckOut(); setVisible(true);
     }
 
+    // =========================================================
+    // LÀM MỚI DỮ LIỆU TỪ CSDL (REFRESH)
+    // =========================================================
     public void refreshData() {
         if (isRefreshing) return; 
         isRefreshing = true;
@@ -159,6 +165,9 @@ public class DashboardUI extends JFrame {
         } finally { isRefreshing = false; }
     }
 
+    // =========================================================
+    // TẠO THANH MENU BÊN TRÁI (SIDEBAR)
+    // =========================================================
     private JPanel createSidebar() {
         JPanel sidebar = new JPanel();
         sidebar.setPreferredSize(new Dimension(SIDEBAR_WIDTH, 0));
@@ -237,48 +246,38 @@ public class DashboardUI extends JFrame {
         itemCode.addActionListener(e -> { Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(EmployeeManager.getInstance().getMyCompanyCode()), null); JOptionPane.showMessageDialog(this, "Đã copy mã công ty vào khay nhớ tạm!"); });
         popup.add(itemCode);
         
-// --- BẮT ĐẦU PHẦN THANH TRƯỢT GIAO DIỆN ---
-        // Tạo một bảng chứa (Panel) để nhóm chữ và thanh trượt lại với nhau
         JPanel themePanel = new JPanel(new BorderLayout());
         themePanel.setBackground(isDarkMode ? BG_CARD : Color.WHITE);
-        themePanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15)); // Căn lề cho đẹp
+        themePanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
         
-        // Nhãn văn bản
         JLabel lblTheme = new JLabel("Chế độ Tối (Dark Mode)");
         lblTheme.setFont(new Font("Tahoma", Font.BOLD, 14));
         lblTheme.setForeground(isDarkMode ? Color.WHITE : Color.BLACK);
 
-        // Khởi tạo thanh trượt mà chúng ta đã làm
         ToggleSwitch toggleTheme = new ToggleSwitch();
-        toggleTheme.setSelected(isDarkMode); // Đặt trạng thái thanh trượt khớp với giao diện hiện hành
+        toggleTheme.setSelected(isDarkMode);
         
-        // Bắt sự kiện khi Giám đốc nhấp chuột vào thanh trượt
         toggleTheme.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                isDarkMode = toggleTheme.isSelected(); // Lưu lại lựa chọn
+                isDarkMode = toggleTheme.isSelected();
                 
-                // Sử dụng Timer để tạo độ trễ 200 mili-giây
-                // Việc này giúp thanh trượt có thời gian chạy hiệu ứng hoạt hình trước khi đổi màu
                 Timer delayLoadTimer = new Timer(200, evt -> {
-                    popup.setVisible(false);   // Ẩn bảng menu đi
-                    new DashboardUI();         // TẢI LẠI TRANG GIÁM ĐỐC với màu mới
-                    dispose();                 // Đóng cửa sổ cũ
+                    popup.setVisible(false);
+                    new DashboardUI();
+                    dispose();
                 });
                 
-                delayLoadTimer.setRepeats(false); // Chỉ chạy bộ đếm thời gian 1 lần
-                delayLoadTimer.start();           // Bắt đầu đếm
+                delayLoadTimer.setRepeats(false);
+                delayLoadTimer.start();
             }
         });
 
-        // Gắn chữ vào bên trái, thanh trượt vào bên phải của bảng chứa
         themePanel.add(lblTheme, BorderLayout.WEST);
         themePanel.add(toggleTheme, BorderLayout.EAST);
         
-        // Đưa toàn bộ bảng chứa này vào trong Popup Menu
         popup.add(themePanel);
-        popup.addSeparator(); // Vẽ một đường kẻ ngang ngăn cách
-        // --- KẾT THÚC PHẦN THANH TRƯỢT GIAO DIỆN ---
+        popup.addSeparator();
         JMenuItem itemLogout = new JMenuItem("Đăng xuất"); 
         itemLogout.setIcon(IconUtils.createLogoutIcon(new Color(220, 38, 38)));
         itemLogout.setFont(new Font("Tahoma", Font.BOLD, 14)); itemLogout.setBackground(isDarkMode ? BG_CARD : Color.WHITE); itemLogout.setForeground(new Color(220, 38, 38)); itemLogout.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15)); itemLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -293,6 +292,9 @@ public class DashboardUI extends JFrame {
         btn.addActionListener(e -> { refreshData(); cardLayout.show(mainCardPanel, cardName); }); return btn;
     }
 
+    // =========================================================
+    // 1. GIAO DIỆN TỔNG QUAN (THỐNG KÊ, BIỂU ĐỒ)
+    // =========================================================
     private JPanel createTongQuanPanel() {
         JPanel p = new JPanel(new BorderLayout(20, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         JPanel topPanel = new JPanel(new BorderLayout(0, 20)); topPanel.setOpaque(false);
@@ -307,6 +309,9 @@ public class DashboardUI extends JFrame {
         return p;
     }
 
+    // =========================================================
+    // 2. GIAO DIỆN QUẢN LÝ NHÂN VIÊN
+    // =========================================================
     private JPanel createNhanVienPanel() {
         JPanel p = new JPanel(new BorderLayout()); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30,30,30,30));
         JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false);
@@ -431,6 +436,9 @@ public class DashboardUI extends JFrame {
         bottomPanel.add(btnRequestOT); d.add(bottomPanel, BorderLayout.SOUTH); d.setVisible(true);
     }
 
+    // =========================================================
+    // TÍNH NĂNG XUẤT DANH SÁCH RA EXCEL
+    // =========================================================
     private void exportToExcel() {
         JFileChooser fileChooser = new JFileChooser(); fileChooser.setDialogTitle("Chọn nơi lưu file Excel (CSV)"); fileChooser.setFileFilter(new FileNameExtensionFilter("Excel / CSV File", "csv"));
         if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -448,7 +456,6 @@ public class DashboardUI extends JFrame {
         }
     }
 
-    // Bộ phân tích CSV an toàn tuyệt đối (Chống lỗi treo phần mềm do Regex)
     private String[] parseCSVLine(String line) {
         java.util.List<String> list = new java.util.ArrayList<>();
         StringBuilder sb = new StringBuilder();
@@ -463,6 +470,9 @@ public class DashboardUI extends JFrame {
         return list.toArray(new String[0]);
     }
 
+    // =========================================================
+    // TÍNH NĂNG NHẬP NHÂN VIÊN TỪ FILE EXCEL
+    // =========================================================
     private void importFromExcel() {
         JOptionPane.showMessageDialog(this, "Hệ thống sẽ tự động quét dòng tiêu đề để nhận diện các cột.\nVui lòng đảm bảo file có các cột chứa từ khóa:\n- 'tên' (Họ và Tên)\n- 'chức' (Chức vụ)\n- 'email'\n- 'sđt' hoặc 'điện thoại'\n- 'địa chỉ'\n- 'ngày sinh'\n- 'phòng' (Tùy chọn)\n\n💡 Lương cơ bản sẽ tự động được gán theo chức vụ.");
         JFileChooser fileChooser = new JFileChooser(); fileChooser.setDialogTitle("Chọn file CSV để nhập (Yêu cầu có cột Tên và Chức vụ)"); fileChooser.setFileFilter(new FileNameExtensionFilter("Excel / CSV File", "csv"));
@@ -474,13 +484,11 @@ public class DashboardUI extends JFrame {
                 int nameIdx = -1, depIdx = -1, posIdx = -1, emailIdx = -1, phoneIdx = -1, addressIdx = -1, dobIdx = -1;
                 boolean headerFound = false;
 
-                // Quét 20 dòng đầu tiên để tìm cho ra dòng tiêu đề (Bỏ qua các dòng rỗng, dòng thông tin thừa)
                 for (int i = 0; i < 20; i++) {
                     line = br.readLine();
                     if (line == null) break;
                     if (line.trim().isEmpty()) continue;
                     
-                    // Triệt tiêu ký tự ẩn BOM nếu có
                     if (line.startsWith("\uFEFF") || line.startsWith("\uEFBBBF")) {
                         line = line.replace("\uFEFF", "").replace("\uEFBBBF", "");
                     }
@@ -491,13 +499,12 @@ public class DashboardUI extends JFrame {
                         if (h.contains("sđt") || h.contains("sdt") || h.contains("điện thoại") || h.contains("phone") || h.contains("thoại") || h.contains("thoai")) phoneIdx = j;
                         else if (h.contains("email")) emailIdx = j;
                         else if (h.contains("địa chỉ") || h.contains("dia chi") || h.contains("address")) addressIdx = j;
-                        else if (h.contains("ngày sinh") || h.contains("ngay sinh") || h.contains("dob") || h.contains("sinh")) dobIdx = j;
+                        else if (h.contains("ngày sinh") || h.contains("ngay sinh") || h.contains("dob")) dobIdx = j;
                         else if (h.contains("phòng") || h.contains("ban") || h.contains("dept") || h.contains("phong")) depIdx = j;
                         else if (h.contains("chức") || h.contains("pos") || h.contains("chuc")) posIdx = j;
                         else if (h.contains("tên") || h.contains("name") || h.contains("họ") || h.contains("ten") || h.contains("ho")) nameIdx = j;
                     }
                     
-                    // Nếu tìm thấy ít nhất Tên và Chức vụ thì chốt đây chính là dòng tiêu đề
                     if (nameIdx != -1 && posIdx != -1) {
                         headerFound = true; break;
                     } else {
@@ -517,7 +524,6 @@ public class DashboardUI extends JFrame {
                     if (data.length > Math.max(nameIdx, posIdx)) {
                         try {
                             String name = data[nameIdx].replace("\"", "").trim();
-                            // Nếu file xuất ra khuyết mất Phòng ban, mặc định đưa họ vào phòng Chung
                             String dep = (depIdx != -1 && data.length > depIdx) ? data[depIdx].replace("\"", "").trim() : "Chung";
                             String pos = data[posIdx].replace("\"", "").trim();
                             String email = (emailIdx != -1 && data.length > emailIdx) ? data[emailIdx].replace("\"", "").trim() : "";
@@ -527,7 +533,6 @@ public class DashboardUI extends JFrame {
                             
                             if (name.isEmpty() || pos.isEmpty()) { errorCount++; line = br.readLine(); continue; }
                             
-                            // Tự động gán mức lương mặc định theo chức vụ
                             double salary = 5000000;
                             String pLower = pos.toLowerCase();
                             if (pLower.contains("thực tập")) salary = 3000000;
@@ -547,9 +552,9 @@ public class DashboardUI extends JFrame {
         }
     }
 
-    // =======================================================
-    // PHẦN QUẢN LÝ PHÒNG BAN: ĐÃ THÊM NÚT "XEM CHI TIẾT PB"
-    // =======================================================
+    // =========================================================
+    // 3. GIAO DIỆN QUẢN LÝ PHÒNG BAN
+    // =========================================================
     private JPanel createPhongBanPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false);
@@ -586,9 +591,8 @@ public class DashboardUI extends JFrame {
         JButton btnChangePos = new RoundedButton("Đổi Phòng / Chức vụ"); btnChangePos.setBackground(new Color(59, 130, 246)); btnChangePos.setForeground(Color.WHITE);
         btnChangePos.addActionListener(e -> showChangeDeptPosDialog());
 
-        // Nút xem chi tiết phòng ban (Tự động lọc Trưởng phòng, Phó phòng, Nhân viên)
         JButton btnViewDepDetails = new RoundedButton("Xem chi tiết PB"); 
-        btnViewDepDetails.setBackground(new Color(139, 92, 246)); // Màu tím
+        btnViewDepDetails.setBackground(new Color(139, 92, 246));
         btnViewDepDetails.setForeground(Color.WHITE);
         btnViewDepDetails.addActionListener(e -> showDepartmentDetailsDialog());
 
@@ -646,7 +650,6 @@ public class DashboardUI extends JFrame {
         d.add(new JLabel()); d.add(btnSave); d.setVisible(true);
     }
 
-    // ĐÃ THÊM: Hộp thoại xem danh sách chi tiết của Phòng ban
     private void showDepartmentDetailsDialog() {
         String selectedDep = (String) cbSelectDepartment.getSelectedItem();
         if (selectedDep == null || selectedDep.equals("-- Tất cả phòng ban --")) {
@@ -715,7 +718,7 @@ public class DashboardUI extends JFrame {
             File fileToSave = fileChooser.getSelectedFile(); 
             if (!fileToSave.getName().toLowerCase().endsWith(".csv")) fileToSave = new File(fileToSave.getParentFile(), fileToSave.getName() + ".csv");
             try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileToSave), "UTF-8"))) {
-                writer.write('\ufeff'); // BOM để Excel tự động nhận diện đúng font Tiếng Việt
+                writer.write('\ufeff');
                 writer.println("DANH SÁCH NHÂN VIÊN");
                 writer.println("Phòng ban:," + selectedDep);
                 writer.println();
@@ -742,6 +745,9 @@ public class DashboardUI extends JFrame {
         }
     }
 
+    // =========================================================
+    // 4. GIAO DIỆN GỬI THÔNG BÁO CHUNG
+    // =========================================================
     private JPanel createThongBaoPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         JLabel title = new JLabel("Phát Thông Báo Chung"); title.setFont(new Font("Tahoma", Font.BOLD, 26)); title.setForeground(TEXT_PRIMARY); p.add(title, BorderLayout.NORTH);
@@ -750,7 +756,6 @@ public class DashboardUI extends JFrame {
         JLabel lblInstruct = new JLabel("Nhập nội dung thông báo:"); lblInstruct.setFont(new Font("Tahoma", Font.BOLD, 14)); lblInstruct.setForeground(TEXT_PRIMARY);
         JTextArea txtMsg = new JTextArea(5, 20); txtMsg.setLineWrap(true); txtMsg.setWrapStyleWord(true); txtMsg.setFont(new Font("Tahoma", Font.PLAIN, 14)); txtMsg.setBackground(isDarkMode ? new Color(55, 65, 81) : Color.WHITE); txtMsg.setForeground(TEXT_PRIMARY); txtMsg.setCaretColor(TEXT_PRIMARY);
         
-        // Giới hạn 255 ký tự cho thanh nhập thông báo
         ((javax.swing.text.AbstractDocument) txtMsg.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
             public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
                 if (string == null) return; int overLimit = (fb.getDocument().getLength() + string.length()) - 255;
@@ -791,6 +796,9 @@ public class DashboardUI extends JFrame {
         content.add(formPanel, BorderLayout.NORTH); content.add(historyPanel, BorderLayout.CENTER); p.add(content, BorderLayout.CENTER); return p;
     }
 
+    // =========================================================
+    // 5. GIAO DIỆN DUYỆT NGHỈ & QUẢN LÝ VẮNG MẶT
+    // =========================================================
     private JPanel createVangMatPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         JLabel title = new JLabel("Duyệt nghỉ & Quản lý vắng mặt"); title.setFont(new Font("Tahoma", Font.BOLD, 26)); title.setForeground(TEXT_PRIMARY); p.add(title, BorderLayout.NORTH);
@@ -825,7 +833,6 @@ public class DashboardUI extends JFrame {
         Runnable fetchAbsence = () -> {
             vangMatModel.setRowCount(0);
             try {
-                // Sử dụng "d/M/yyyy" để linh hoạt nhận diện cả ngày có 1 hoặc 2 chữ số (VD: 1/1/2023 và 01/01/2023)
                 currentAbsenceDate = LocalDate.parse(txtDate.getText().trim(), DateTimeFormatter.ofPattern("d/M/yyyy"));
                 List<String[]> report = EmployeeManager.getInstance().getDailyAbsenceReport(currentAbsenceDate);
                 for(String[] r : report) vangMatModel.addRow(r);
@@ -864,6 +871,9 @@ public class DashboardUI extends JFrame {
         SwingUtilities.invokeLater(fetchAbsence); return p;
     }
 
+    // =========================================================
+    // 6. GIAO DIỆN THEO DÕI CHẤM CÔNG (THEO TUẦN)
+    // =========================================================
     private JPanel createChamCongPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 15)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false); JLabel title = new JLabel("Bảng Quản Lý Chấm Công"); title.setFont(new Font("Tahoma", Font.BOLD, 22)); title.setForeground(TEXT_PRIMARY); header.add(title, BorderLayout.WEST);
@@ -903,6 +913,9 @@ public class DashboardUI extends JFrame {
         }
     }
 
+    // =========================================================
+    // 7. GIAO DIỆN TÍNH LƯƠNG NHÂN VIÊN
+    // =========================================================
     private JPanel createTinhLuongPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         
@@ -914,7 +927,6 @@ public class DashboardUI extends JFrame {
 
         JPanel content = new JPanel(new BorderLayout(25, 0)); content.setOpaque(false);
         
-        // --- PANEL TRÁI: FORM NHẬP LIỆU ---
         JPanel leftPanel = new JPanel(new BorderLayout()); leftPanel.setOpaque(false); leftPanel.setPreferredSize(new Dimension(350, 0));
         JPanel form = new JPanel(new GridLayout(12, 1, 5, 5)); form.setBackground(BG_CARD); 
         form.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(isDarkMode ? new Color(55,65,81) : new Color(229,231,235), 1), BorderFactory.createEmptyBorder(20, 20, 20, 20)));
@@ -940,7 +952,6 @@ public class DashboardUI extends JFrame {
         JPanel formWrapper = new JPanel(new BorderLayout()); formWrapper.setOpaque(false); formWrapper.add(form, BorderLayout.NORTH); formWrapper.add(formBottom, BorderLayout.CENTER);
         leftPanel.add(formWrapper, BorderLayout.NORTH); content.add(leftPanel, BorderLayout.WEST);
         
-        // --- PANEL PHẢI: BẢNG HIỂN THỊ ---
         JPanel rightPanel = new JPanel(new BorderLayout(0, 15)); rightPanel.setOpaque(false);
         JPanel tableHeader = new JPanel(new BorderLayout()); tableHeader.setOpaque(false);
         JLabel lblTableTitle = new JLabel("Bảng kết quả lương"); lblTableTitle.setFont(new Font("Tahoma", Font.BOLD, 18)); lblTableTitle.setForeground(TEXT_PRIMARY);
@@ -955,8 +966,8 @@ public class DashboardUI extends JFrame {
         t.getTableHeader().setOpaque(false);
         t.getTableHeader().setBackground(BG_CARD);
         t.getTableHeader().setForeground(TEXT_PRIMARY);
-        t.getColumnModel().removeColumn(t.getColumnModel().getColumn(9)); // Ẩn cột Tổng Giờ đi
-        t.getColumnModel().removeColumn(t.getColumnModel().getColumn(8)); // Ẩn cột Quên CO đi
+        t.getColumnModel().removeColumn(t.getColumnModel().getColumn(9));
+        t.getColumnModel().removeColumn(t.getColumnModel().getColumn(8));
         rightPanel.add(new RoundedScrollPane(t), BorderLayout.CENTER); 
         content.add(rightPanel, BorderLayout.CENTER);
         
@@ -1021,6 +1032,9 @@ public class DashboardUI extends JFrame {
         if(JOptionPane.showConfirmDialog(this, "Xóa nhân viên " + id + "?") == JOptionPane.YES_OPTION) { EmployeeManager.getInstance().deleteEmployee(id); refreshData(); }
     }
 
+    // =========================================================
+    // 8. GIAO DIỆN XÉT DUYỆT HỒ SƠ XIN VIỆC
+    // =========================================================
     private JPanel createXetDuyetPanel() {
         JPanel p = new JPanel(new BorderLayout()); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30,30,30,30));
         JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false); JLabel title = new JLabel("Hồ sơ chờ duyệt"); title.setFont(new Font("Tahoma", Font.BOLD, 22)); title.setForeground(TEXT_PRIMARY);
@@ -1101,8 +1115,6 @@ public class DashboardUI extends JFrame {
         }
     }
     private void showEmployeeDetailsDialogForAdmin(String employeeId) {
-        // Lấy thông tin nhân viên từ Database thông qua lớp EmployeeManager
-        // Ghi chú: Đảm bảo bạn đã có hàm getEmployeeProfile(String id) trả về đối tượng Employee trong EmployeeManager
         Employee emp = EmployeeManager.getInstance().getEmployeeProfile(employeeId);
 
         if (emp == null) {
@@ -1110,7 +1122,6 @@ public class DashboardUI extends JFrame {
             return;
         }
 
-        // Khởi tạo Hộp thoại
         JDialog dialog = new JDialog(this, "Hồ Sơ Chi Tiết - " + emp.getName(), true);
         dialog.setSize(450, 560);
         dialog.setLocationRelativeTo(this);
@@ -1121,17 +1132,14 @@ public class DashboardUI extends JFrame {
         p.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
         p.setBackground(Color.WHITE);
 
-        // Chuẩn bị dữ liệu hiển thị (Tránh lỗi null nếu nhân viên chưa cập nhật hồ sơ lần đầu)
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String ngaySinh = emp.getNgaySinh() != null ? emp.getNgaySinh().format(fmt) : "Chưa cập nhật";
         String ngayVao = emp.getNgayVaoLam() != null ? emp.getNgayVaoLam().format(fmt) : "Chưa cập nhật";
         String lienHe = emp.getGiaDinh() != null ? emp.getGiaDinh() : "Chưa cập nhật"; 
         String sdt = emp.getLienLacKhan() != null ? emp.getLienLacKhan() : "Chưa cập nhật";
 
-        // Lấy thêm thông tin liên hệ (Email, SĐT) để giám đốc tiện tra cứu
         String[] contactInfo = EmployeeManager.getInstance().getEmployeeContactInfo(employeeId);
 
-        // Gắn dữ liệu vào giao diện
         p.add(new JLabel("<html><font size='5' color='#2563EB'><b>" + emp.getName() + "</b></font></html>"));
         p.add(new JLabel("<html><b>Mã nhân viên:</b> " + emp.getId() + " - <b>Phòng ban:</b> " + emp.getDepartment() + "</html>"));
         p.add(new JLabel("<html><b>Email:</b> <font color='#3B82F6'><u>" + contactInfo[0] + "</u></font></html>"));
@@ -1156,7 +1164,6 @@ public class DashboardUI extends JFrame {
         p.add(new JLabel("<html><b>Liên hệ cho:</b> " + lienHe + "</html>"));
         p.add(new JLabel("<html><b>Số điện thoại:</b> " + sdt + "</html>"));
 
-        // Nút Đóng
         JButton btnClose = new JButton("Đóng hồ sơ");
         btnClose.setBackground(new Color(229, 231, 235));
         btnClose.setFont(new Font("Tahoma", Font.BOLD, 12));
@@ -1200,9 +1207,9 @@ public class DashboardUI extends JFrame {
         dialog.setVisible(true);
     }
 
-    // =======================================================
-    // GIAO VIỆC CHO NHÂN VIÊN CỤ THỂ
-    // =======================================================
+    // =========================================================
+    // 9. GIAO DIỆN GIAO VIỆC CHO NHÂN VIÊN
+    // =========================================================
     private JPanel createGiaoViecPanel() {
         JPanel p = new JPanel(new BorderLayout(0, 20)); p.setOpaque(false); p.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         
@@ -1243,7 +1250,6 @@ public class DashboardUI extends JFrame {
         JLabel lblDesc = new JLabel("Nội dung chi tiết:"); lblDesc.setForeground(TEXT_PRIMARY); lblDesc.setFont(new Font("Tahoma", Font.BOLD, 14));
         JTextArea txtTaskDesc = new JTextArea(8, 20); txtTaskDesc.setLineWrap(true); txtTaskDesc.setWrapStyleWord(true); txtTaskDesc.setFont(new Font("Tahoma", Font.PLAIN, 14)); txtTaskDesc.setBackground(isDarkMode ? new Color(55, 65, 81) : Color.WHITE); txtTaskDesc.setForeground(TEXT_PRIMARY); txtTaskDesc.setCaretColor(TEXT_PRIMARY);
         
-        // Giới hạn 255 ký tự cho thanh nhập nội dung công việc
         ((javax.swing.text.AbstractDocument) txtTaskDesc.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
             public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
                 if (string == null) return; int overLimit = (fb.getDocument().getLength() + string.length()) - 255;
@@ -1292,7 +1298,7 @@ public class DashboardUI extends JFrame {
         cbFilter.addActionListener(e -> {
             String selected = (String) cbFilter.getSelectedItem();
             if ("Tất cả".equals(selected)) sorter.setRowFilter(null);
-            else sorter.setRowFilter(javax.swing.RowFilter.regexFilter(selected, 2));
+            else sorter.setRowFilter(javax.swing.RowFilter.regexFilter(java.util.regex.Pattern.quote(selected), 2));
         });
         tblHistory.getColumnModel().getColumn(0).setPreferredWidth(120); tblHistory.getColumnModel().getColumn(0).setMaxWidth(150);
         tblHistory.getColumnModel().getColumn(2).setPreferredWidth(150); tblHistory.getColumnModel().getColumn(2).setMaxWidth(180);
@@ -1343,7 +1349,6 @@ public class DashboardUI extends JFrame {
 
             boolean isDeptTask = empStr.startsWith("[Phòng ban]");
             if (!isDeptTask) {
-                // Tách lấy Mã nhân viên (Nằm trước dấu " - ")
                 String empId = empStr.split(" - ")[0];
                 String shiftToday = EmployeeManager.getInstance().getSchedule(empId, LocalDate.now());
                 boolean isOnLeave = shiftToday.startsWith("Nghỉ") || shiftToday.startsWith("Xin nghỉ") || shiftToday.startsWith("Chờ duyệt nghỉ") || shiftToday.startsWith("Đã duyệt nghỉ");
@@ -1353,7 +1358,7 @@ public class DashboardUI extends JFrame {
                         "Cảnh báo: Nhân viên này hôm nay có trạng thái lịch là: [" + shiftToday + "].\nBạn có chắc chắn vẫn muốn giao việc không?", 
                         "Cảnh báo nhân viên vắng mặt", 
                         JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-                    if (confirm != JOptionPane.YES_OPTION) return; // Nếu chọn "Không" thì hủy lệnh giao việc
+                    if (confirm != JOptionPane.YES_OPTION) return;
                 }
             }
 
@@ -1362,9 +1367,6 @@ public class DashboardUI extends JFrame {
         p.add(content, BorderLayout.CENTER); return p;
     }
 
-    // =========================================================
-    // HIỆU ỨNG TOAST POPUP SINH NHẬT CỦA SẾP
-    // =========================================================
     private void checkAndShowBirthdays() {
         String adminUser = EmployeeManager.getInstance().getCurrentUsername();
         List<String> birthdays = EmployeeManager.getInstance().getCompanyBirthdaysToday(adminUser);
@@ -1383,7 +1385,6 @@ public class DashboardUI extends JFrame {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         java.util.List<String> forgotList = new java.util.ArrayList<>();
         
-        // Lấy danh sách những người có giờ Vào (khác null) nhưng giờ Ra bị hệ thống chốt là 23:59
         for (Employee e : list) {
             String[] record = EmployeeManager.getInstance().getAttendanceRecord(e.getId(), yesterday);
             if (record[0] != null && "23:59".equals(record[1])) {
@@ -1393,7 +1394,6 @@ public class DashboardUI extends JFrame {
         
         if (!forgotList.isEmpty()) {
             String details = String.join("\n", forgotList);
-            // Kích hoạt Timer 10.5s để tránh đè lên Toast Chúc mừng sinh nhật (nếu có)
             Timer t = new Timer(10500, e -> { 
                 showToast("Nhân viên quên Check-out hôm qua:\n" + details); 
             });
@@ -1433,7 +1433,7 @@ public class DashboardUI extends JFrame {
         Toolkit.getDefaultToolkit().beep(); 
         toast.setVisible(true);
         
-        Timer hideTimer = new Timer(7000, e -> toast.dispose()); // Tự đóng sau 7 giây
+        Timer hideTimer = new Timer(7000, e -> toast.dispose());
         hideTimer.setRepeats(false);
         hideTimer.start();
     }
