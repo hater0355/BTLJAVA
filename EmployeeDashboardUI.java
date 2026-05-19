@@ -844,13 +844,17 @@ private void renderCalendarGrid() {
             if (!newP.equals(confP)) { JOptionPane.showMessageDialog(d, "Mật khẩu xác nhận không khớp!", "Lỗi", JOptionPane.ERROR_MESSAGE); return; }
             
             String currentUser = EmployeeManager.getInstance().getCurrentUsername();
-            String role = EmployeeManager.getInstance().authenticateUser(currentUser, oldP);
-            
-            if (role == null) { JOptionPane.showMessageDialog(d, "Mật khẩu hiện tại không đúng!", "Lỗi xác thực", JOptionPane.ERROR_MESSAGE); return; }
-            
-            EmployeeManager.getInstance().changePassword(currentUser, newP);
-            JOptionPane.showMessageDialog(d, "Đổi mật khẩu thành công!\nVui lòng ghi nhớ mật khẩu mới của bạn.");
-            d.dispose();
+            try {
+                String role = EmployeeManager.getInstance().authenticateUser(currentUser, oldP);
+                
+                if (role == null) { JOptionPane.showMessageDialog(d, "Mật khẩu hiện tại không đúng!", "Lỗi xác thực", JOptionPane.ERROR_MESSAGE); return; }
+                
+                EmployeeManager.getInstance().changePassword(currentUser, newP);
+                JOptionPane.showMessageDialog(d, "Đổi mật khẩu thành công!\nVui lòng ghi nhớ mật khẩu mới của bạn.");
+                d.dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(d, "Lỗi kiểm tra mật khẩu: " + ex.getMessage(), "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+            }
         });
         
         d.add(p, BorderLayout.CENTER); d.add(bottomP, BorderLayout.SOUTH); d.setVisible(true);
@@ -963,17 +967,18 @@ private void renderCalendarGrid() {
         String[] contactInfo = EmployeeManager.getInstance().getEmployeeContactInfo(employeeId);
         
         JDialog dialog = new JDialog(this, "Hồ Sơ Đồng Nghiệp - " + emp.getName(), true);
-        dialog.setSize(400, 480); dialog.setLocationRelativeTo(this); dialog.setLayout(new BorderLayout()); dialog.getContentPane().setBackground(Color.WHITE);
-        JPanel p = new JPanel(new GridLayout(9, 1, 10, 5)); p.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30)); p.setBackground(Color.WHITE);
+        dialog.setSize(400, 480); dialog.setLocationRelativeTo(this); dialog.setLayout(new BorderLayout()); dialog.getContentPane().setBackground(BG_CARD);
+        JPanel p = new JPanel(new GridLayout(9, 1, 10, 5)); p.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30)); p.setBackground(BG_CARD);
+        String txtColor = isDarkMode ? "white" : "black";
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String ngaySinh = emp.getNgaySinh() != null ? emp.getNgaySinh().format(fmt) : "Chưa cập nhật";
         String ngayVao = emp.getNgayVaoLam() != null ? emp.getNgayVaoLam().format(fmt) : "Chưa cập nhật";
         String lienHe = emp.getGiaDinh() != null ? emp.getGiaDinh() : "Chưa cập nhật"; String sdt = emp.getLienLacKhan() != null ? emp.getLienLacKhan() : "Chưa cập nhật";
         p.add(new JLabel("<html><font size='5' color='#10B981'><b>" + emp.getName() + "</b></font></html>"));
-        p.add(new JLabel("<html><b>Mã nhân viên:</b> " + emp.getId() + " - <b>Chức vụ:</b> " + emp.getPosition() + "</html>"));
-        p.add(new JLabel("<html><b>Email công việc:</b> <font color='#3B82F6'><u>" + contactInfo[0] + "</u></font></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Mã nhân viên:</b> " + emp.getId() + " - <b>Chức vụ:</b> " + emp.getPosition() + "</font></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Email công việc:</b></font> <font color='#3B82F6'><u>" + contactInfo[0] + "</u></font></html>"));
         
-        JLabel lblPhone = new JLabel("<html><b>SĐT cá nhân:</b> <font color='#3B82F6'><u>" + contactInfo[1] + "</u></font></html>");
+        JLabel lblPhone = new JLabel("<html><font color='" + txtColor + "'><b>SĐT cá nhân:</b></font> <font color='#3B82F6'><u>" + contactInfo[1] + "</u></font></html>");
         lblPhone.setCursor(new Cursor(Cursor.HAND_CURSOR));
         lblPhone.setToolTipText("Nhấp đúp để copy Số điện thoại");
         lblPhone.addMouseListener(new MouseAdapter() {
@@ -986,9 +991,9 @@ private void renderCalendarGrid() {
         });
         p.add(lblPhone);
         
-        p.add(new JLabel("<html><b>Ngày sinh:</b> " + ngaySinh + "   <i>(" + emp.getTuoi() + " tuổi)</i></html>"));
-        p.add(new JLabel("<html><b>Ngày vào làm:</b> " + ngayVao + "   <i>(Thâm niên: " + emp.getThamNien() + " năm)</i></html>"));
-        p.add(new JLabel("<html><hr></html>")); p.add(new JLabel("<html><b>Người liên hệ:</b> " + lienHe + "</html>")); p.add(new JLabel("<html><b>SĐT liên hệ:</b> " + sdt + "</html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Ngày sinh:</b> " + ngaySinh + "   <i>(" + emp.getTuoi() + " tuổi)</i></font></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Ngày vào làm:</b> " + ngayVao + "   <i>(Thâm niên: " + emp.getThamNien() + " năm)</i></font></html>"));
+        p.add(new JLabel("<html><hr></html>")); p.add(new JLabel("<html><font color='" + txtColor + "'><b>Người liên hệ:</b> " + lienHe + "</font></html>")); p.add(new JLabel("<html><font color='" + txtColor + "'><b>SĐT liên hệ:</b> " + sdt + "</font></html>"));
         JButton btnClose = new JButton("Đóng"); btnClose.setBackground(new Color(229, 231, 235)); btnClose.setFont(new Font("Tahoma", Font.BOLD, 12)); btnClose.setFocusPainted(false); btnClose.addActionListener(e -> dialog.dispose());
         
         JButton btnMail = new JButton("Gửi Email"); btnMail.setBackground(new Color(59, 130, 246)); btnMail.setForeground(Color.WHITE); btnMail.setFont(new Font("Tahoma", Font.BOLD, 12)); btnMail.setFocusPainted(false);
@@ -1015,7 +1020,7 @@ private void renderCalendarGrid() {
             } catch (Exception ex) { JOptionPane.showMessageDialog(dialog, "Không thể mở ứng dụng gửi Email: " + ex.getMessage()); }
         });
         
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0)); bottomPanel.setBackground(Color.WHITE); bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0)); 
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0)); bottomPanel.setBackground(BG_CARD); bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0)); 
         bottomPanel.add(btnMail); bottomPanel.add(btnClose);
         dialog.add(p, BorderLayout.CENTER); dialog.add(bottomPanel, BorderLayout.SOUTH); dialog.setVisible(true);
     }

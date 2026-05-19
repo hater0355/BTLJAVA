@@ -9,13 +9,11 @@ import java.sql.Statement;
     // =========================================================
 public class DatabaseHelper {
     
-    // Link 1: Dùng để kết nối lúc đầu khi máy người dùng chưa hề có Database
+    // link 1: Dùng để kết nối lúc đầu khi máy người dùng chưa hề có Database
     private static final String BASE_URL = "jdbc:mysql://localhost:3306/?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
     
-    // Link 2: Dùng để kết nối làm việc bình thường sau khi đã có Database "quanlyluong"
+    // link 2: Dùng để kết nối làm việc bình thường sau khi đã có Database "quanlyluong"
     private static final String URL = "jdbc:mysql://localhost:3306/quanlyluong?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-    
-    // Mặc định của XAMPP
     private static final String USER = "root"; 
     private static final String PASS = "";     
 
@@ -25,20 +23,17 @@ public class DatabaseHelper {
         return DriverManager.getConnection(URL, USER, PASS);
     }
 
-    // HÀM TỰ ĐỘNG TẠO DATABASE VÀ BẢNG CHO NGƯỜI MỚI DÙNG XAMPP
+    
     public static void initDatabase() {
         try {
-            // Bước 1: Kết nối vào MySQL gốc để tạo Database "quanlyluong"
             Class.forName("com.mysql.cj.jdbc.Driver");
             try (Connection connBase = DriverManager.getConnection(BASE_URL, USER, PASS);
                  Statement stmtBase = connBase.createStatement()) {
                 
-                // Lệnh tạo Database hỗ trợ tiếng Việt (utf8mb4)
                 stmtBase.execute("CREATE DATABASE IF NOT EXISTS quanlyluong CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
                 System.out.println("✅ Đã kiểm tra/tạo thành công Database 'quanlyluong'");
             }
 
-            // Bước 2: Kết nối thẳng vào "quanlyluong" để xây dựng 8 bảng
             try (Connection conn = getConnection(); 
                  Statement stmt = conn.createStatement()) {
                 
@@ -47,7 +42,7 @@ public class DatabaseHelper {
                 stmt.execute("CREATE TABLE IF NOT EXISTS users (username VARCHAR(50) PRIMARY KEY, password VARCHAR(255), role VARCHAR(20), company_code VARCHAR(20), full_name VARCHAR(100), email VARCHAR(100), phone VARCHAR(20))");
                 stmt.execute("CREATE TABLE IF NOT EXISTS employees (id VARCHAR(20) PRIMARY KEY, name VARCHAR(100), department VARCHAR(100), position VARCHAR(100), baseSalary DOUBLE, account_username VARCHAR(50), login_username VARCHAR(50), status VARCHAR(20) DEFAULT 'PENDING', ngay_sinh DATE, gia_dinh VARCHAR(255), lien_lac_khan VARCHAR(50), ngay_vao_lam DATE DEFAULT (CURRENT_DATE), nguoi_phu_thuoc INT DEFAULT 0)");
                 stmt.execute("CREATE TABLE IF NOT EXISTS departments (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), account_username VARCHAR(50))");
-                stmt.execute("CREATE TABLE IF NOT EXISTS notifications (id INT AUTO_INCREMENT PRIMARY KEY, account_username VARCHAR(50), message TEXT, created_at DATE)");
+                stmt.execute("CREATE TABLE IF NOT EXISTS notifications (id INT AUTO_INCREMENT PRIMARY KEY, account_username VARCHAR(50), message TEXT, created_at DATETIME)");
                 stmt.execute("CREATE TABLE IF NOT EXISTS rewards_penalties (id INT AUTO_INCREMENT PRIMARY KEY, employee_id VARCHAR(50), month INT, year INT, amount DOUBLE, reason TEXT, recorded_by VARCHAR(50))");
                 stmt.execute("CREATE TABLE IF NOT EXISTS salary_history (id INT AUTO_INCREMENT PRIMARY KEY, employee_id VARCHAR(20), pay_month INT, pay_year INT, total_salary DOUBLE, calculated_at DATE)");
                 stmt.execute("CREATE TABLE IF NOT EXISTS schedules (employee_id VARCHAR(20) NOT NULL, work_date DATE NOT NULL, shift VARCHAR(100), PRIMARY KEY (employee_id, work_date))");

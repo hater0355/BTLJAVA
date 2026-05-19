@@ -55,6 +55,7 @@ public class DashboardUI extends JFrame {
     private DefaultTableModel giaoViecModel;
     private JLabel lblTotalTasks;
     private JLabel lblCompletedTasks;
+    private List<Employee> cachedEmployeeList = new java.util.ArrayList<>();
 
     // =========================================================
     // KHỞI TẠO KHUNG GIAO DIỆN GIÁM ĐỐC
@@ -103,7 +104,8 @@ public class DashboardUI extends JFrame {
         isRefreshing = true;
 
         try {
-            List<Employee> list = EmployeeManager.getInstance().getAllEmployees();
+            cachedEmployeeList = EmployeeManager.getInstance().getAllEmployees();
+            List<Employee> list = cachedEmployeeList;
             
             double total = 0;
             for(Employee e : list) total += e.getBaseSalary();
@@ -1102,7 +1104,7 @@ public class DashboardUI extends JFrame {
         public CustomPieChart() { setBackground(BG_CARD); }
         @Override protected void paintComponent(Graphics g) {
             super.paintComponent(g); Graphics2D g2d = (Graphics2D) g; g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            List<Employee> list = EmployeeManager.getInstance().getAllEmployees();
+            List<Employee> list = cachedEmployeeList;
             if (list == null || list.isEmpty()) return;
             double totalSalary = 0; for (Employee e : list) totalSalary += e.getBaseSalary(); if (totalSalary == 0) return;
             int width = getWidth(); int height = getHeight(); int pieSize = Math.min(width, height) - 60; int x = 40; int y = (height - pieSize) / 2; int startAngle = 0; int colorIndex = 0; int legendX = x + pieSize + 50; int legendY = y + 20; g2d.setFont(new Font("Tahoma", Font.PLAIN, 12));
@@ -1126,11 +1128,12 @@ public class DashboardUI extends JFrame {
         dialog.setSize(450, 560);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
-        dialog.getContentPane().setBackground(Color.WHITE);
+        dialog.getContentPane().setBackground(BG_CARD);
 
         JPanel p = new JPanel(new GridLayout(10, 1, 10, 5));
         p.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-        p.setBackground(Color.WHITE);
+        p.setBackground(BG_CARD);
+        String txtColor = isDarkMode ? "white" : "black";
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String ngaySinh = emp.getNgaySinh() != null ? emp.getNgaySinh().format(fmt) : "Chưa cập nhật";
@@ -1141,10 +1144,10 @@ public class DashboardUI extends JFrame {
         String[] contactInfo = EmployeeManager.getInstance().getEmployeeContactInfo(employeeId);
 
         p.add(new JLabel("<html><font size='5' color='#2563EB'><b>" + emp.getName() + "</b></font></html>"));
-        p.add(new JLabel("<html><b>Mã nhân viên:</b> " + emp.getId() + " - <b>Phòng ban:</b> " + emp.getDepartment() + "</html>"));
-        p.add(new JLabel("<html><b>Email:</b> <font color='#3B82F6'><u>" + contactInfo[0] + "</u></font></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Mã nhân viên:</b> " + emp.getId() + " - <b>Phòng ban:</b> " + emp.getDepartment() + "</font></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Email:</b></font> <font color='#3B82F6'><u>" + contactInfo[0] + "</u></font></html>"));
         
-        JLabel lblPhone = new JLabel("<html><b>SĐT:</b> <font color='#3B82F6'><u>" + contactInfo[1] + "</u></font></html>");
+        JLabel lblPhone = new JLabel("<html><font color='" + txtColor + "'><b>SĐT:</b></font> <font color='#3B82F6'><u>" + contactInfo[1] + "</u></font></html>");
         lblPhone.setCursor(new Cursor(Cursor.HAND_CURSOR));
         lblPhone.setToolTipText("Nhấp đúp để copy Số điện thoại");
         lblPhone.addMouseListener(new MouseAdapter() {
@@ -1157,12 +1160,12 @@ public class DashboardUI extends JFrame {
         });
         p.add(lblPhone);
         
-        p.add(new JLabel("<html><b>Ngày sinh:</b> " + ngaySinh + "   <i>(" + emp.getTuoi() + " tuổi)</i></html>"));
-        p.add(new JLabel("<html><b>Ngày vào làm:</b> " + ngayVao + "   <i>(Thâm niên: " + emp.getThamNien() + " năm)</i></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Ngày sinh:</b> " + ngaySinh + "   <i>(" + emp.getTuoi() + " tuổi)</i></font></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Ngày vào làm:</b> " + ngayVao + "   <i>(Thâm niên: " + emp.getThamNien() + " năm)</i></font></html>"));
         p.add(new JLabel("<html><hr></html>")); 
         p.add(new JLabel("<html><font color='#EF4444'><b>THÔNG TIN KHẨN CẤP</b></font></html>"));
-        p.add(new JLabel("<html><b>Liên hệ cho:</b> " + lienHe + "</html>"));
-        p.add(new JLabel("<html><b>Số điện thoại:</b> " + sdt + "</html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Liên hệ cho:</b> " + lienHe + "</font></html>"));
+        p.add(new JLabel("<html><font color='" + txtColor + "'><b>Số điện thoại:</b> " + sdt + "</font></html>"));
 
         JButton btnClose = new JButton("Đóng hồ sơ");
         btnClose.setBackground(new Color(229, 231, 235));
@@ -1197,7 +1200,7 @@ public class DashboardUI extends JFrame {
         });
 
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        bottomPanel.setBackground(Color.WHITE);
+        bottomPanel.setBackground(BG_CARD);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
         bottomPanel.add(btnMail);
         bottomPanel.add(btnClose);

@@ -36,7 +36,7 @@ public class EmployeeManager {
     // =========================================================
     // 2. XÁC THỰC VÀ QUẢN LÝ TÀI KHOẢN (AUTH & ACCOUNT)
     // =========================================================
-    public String authenticateUser(String username, String password) {
+    public String authenticateUser(String username, String password) throws Exception {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -48,8 +48,6 @@ public class EmployeeManager {
                 currentUserRole = rs.getString("role");
                 return currentUserRole; 
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         return null; 
     }
@@ -507,8 +505,8 @@ public class EmployeeManager {
         
         Employee newEmp = new Employee(empId, name, dep, pos, salary);
         if (dob != null) newEmp.setNgaySinh(dob);
-        newEmp.setGiaDinh(address.isEmpty() ? null : address);
-        newEmp.setLienLacKhan(phone.isEmpty() ? null : phone);
+        
+        // Để trống thông tin liên hệ khẩn cấp để bắt buộc nhân viên tự cập nhật khi đăng nhập lần đầu
         
         addEmployeeFull(newEmp);
         return true;
@@ -565,13 +563,36 @@ public class EmployeeManager {
     }
 
     public void deleteEmployee(String id) {
-        String sql = "DELETE FROM employees WHERE id = ? AND account_username = ?";
+        String sqlSelect = "SELECT login_username FROM employees WHERE id = ? AND account_username = ?";
+        String sqlDelEmp = "DELETE FROM employees WHERE id = ? AND account_username = ?";
+        String sqlDelUser = "DELETE FROM users WHERE username = ?";
         
-        try (Connection conn = DatabaseHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id);
-            pstmt.setString(2, currentUsername); 
-            pstmt.executeUpdate();
+        try (Connection conn = DatabaseHelper.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement pstmtSel = conn.prepareStatement(sqlSelect);
+                 PreparedStatement pstmtEmp = conn.prepareStatement(sqlDelEmp);
+                 PreparedStatement pstmtUser = conn.prepareStatement(sqlDelUser)) {
+                 
+                pstmtSel.setString(1, id);
+                pstmtSel.setString(2, currentUsername);
+                ResultSet rs = pstmtSel.executeQuery();
+                String loginUser = null;
+                if (rs.next()) loginUser = rs.getString("login_username");
+                
+                pstmtEmp.setString(1, id);
+                pstmtEmp.setString(2, currentUsername);
+                pstmtEmp.executeUpdate();
+                
+                if (loginUser != null && !loginUser.isEmpty()) {
+                    pstmtUser.setString(1, loginUser);
+                    pstmtUser.executeUpdate();
+                }
+                
+                conn.commit();
+            } catch (Exception ex) {
+                conn.rollback();
+                ex.printStackTrace();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

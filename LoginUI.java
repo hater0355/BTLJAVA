@@ -132,57 +132,62 @@ public class LoginUI extends JFrame {
             String p = new String(txtPass.getPassword());
             if (u.isEmpty() || p.isEmpty()) { JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!"); return; }
 
-            String role = EmployeeManager.getInstance().authenticateUser(u, p);
-            if (role != null) {
-                if (chkRemember.isSelected()) { 
-                    prefs.put("savedUser", u);
-                } else { 
-                    prefs.remove("savedUser");
-                }
+            try {
+                String role = EmployeeManager.getInstance().authenticateUser(u, p);
+                if (role != null) {
+                    if (chkRemember.isSelected()) { 
+                        prefs.put("savedUser", u);
+                    } else { 
+                        prefs.remove("savedUser");
+                    }
 
-                if (role.equals("ADMIN")) { 
-                    new DashboardUI(); 
-                    dispose(); 
-                } 
-                else {
-                    if (p.equals("123")) {
-                        JPasswordField pf = new JPasswordField();
-                        if (JOptionPane.showConfirmDialog(this, pf, 
-                            "Vui lòng nhập mật khẩu mới của riêng bạn để tiếp tục:", 
-                            JOptionPane.OK_CANCEL_OPTION,
-                            JOptionPane.QUESTION_MESSAGE) == JOptionPane.OK_OPTION) {
-                            
-                            String newPass = new String(pf.getPassword());
-                            if (newPass.isEmpty() || newPass.equals("123")) { 
-                                JOptionPane.showMessageDialog(this, "Mật khẩu mới không được để trống!"); 
-                                EmployeeManager.getInstance().logoutUser();
-                                return;
+                    if (role.equals("ADMIN")) { 
+                        new DashboardUI(); 
+                        dispose(); 
+                    } 
+                    else {
+                        if (p.equals("123")) {
+                            JPasswordField pf = new JPasswordField();
+                            if (JOptionPane.showConfirmDialog(this, pf, 
+                                "Vui lòng nhập mật khẩu mới của riêng bạn để tiếp tục:", 
+                                JOptionPane.OK_CANCEL_OPTION,
+                                JOptionPane.QUESTION_MESSAGE) == JOptionPane.OK_OPTION) {
+                                
+                                String newPass = new String(pf.getPassword());
+                                if (newPass.isEmpty() || newPass.equals("123")) { 
+                                    JOptionPane.showMessageDialog(this, "Mật khẩu mới không hợp lệ hoặc không được để trống!"); 
+                                    EmployeeManager.getInstance().logoutUser();
+                                    return;
+                                }
+                                EmployeeManager.getInstance().changePassword(u, newPass);
+                                JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công!");
+                            } else { 
+                                EmployeeManager.getInstance().logoutUser(); 
+                                return; 
                             }
-                            EmployeeManager.getInstance().changePassword(u, newPass);
-                            JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công!");
-                        } else { 
-                            EmployeeManager.getInstance().logoutUser(); 
-                            return; 
+                        }
+                        
+                        Employee myProfile = EmployeeManager.getInstance().getCurrentEmployeeProfile();
+                        
+                        if (myProfile == null) {
+                            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu hồ sơ! Vui lòng thử đăng nhập lại.", "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+                            EmployeeManager.getInstance().logoutUser();
+                            return;
+                        }
+                        
+                        if (myProfile.getLienLacKhan() == null || myProfile.getLienLacKhan().trim().isEmpty()) {
+                            new FirstLoginSetupUI(myProfile.getId());
+                            dispose(); 
+                        } else {
+                            new EmployeeDashboardUI(); 
+                            dispose(); 
                         }
                     }
-                    
-                    Employee myProfile = EmployeeManager.getInstance().getCurrentEmployeeProfile();
-                    
-                    if (myProfile == null) {
-                        JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu hồ sơ! Vui lòng thử đăng nhập lại.", "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
-                        EmployeeManager.getInstance().logoutUser();
-                        return;
-                    }
-                    
-                    if (myProfile.getLienLacKhan() == null || myProfile.getLienLacKhan().trim().isEmpty()) {
-                        new FirstLoginSetupUI(myProfile.getId());
-                        dispose(); 
-                    } else {
-                        new EmployeeDashboardUI(); 
-                        dispose(); 
-                    }
-                }
-            } else { JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!", "Lỗi", JOptionPane.ERROR_MESSAGE); }
+                } else { JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!", "Lỗi", JOptionPane.ERROR_MESSAGE); }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Lỗi kết nối CSDL hoặc Hệ thống:\n" + ex.getMessage(), "Lỗi Nghiêm Trọng", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
         });
 
         panel.add(title); panel.add(lblUser); panel.add(txtUser); panel.add(lblPass); panel.add(txtPass);
@@ -344,6 +349,7 @@ public class LoginUI extends JFrame {
     }
 
     public static void main(String[] args) {
+        DatabaseHelper.initDatabase(); 
         SwingUtilities.invokeLater(() -> new LoginUI());
     }
 }
